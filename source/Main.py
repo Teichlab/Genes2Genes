@@ -441,8 +441,8 @@ class RefQueryAligner:
         # correlation coefficient trend over sliding window of 10 bins
         rp = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, n_bins)
         qp =  TimeSeriesPreprocessor.Prepocessor(self.query_mat, self.query_time, n_bins)
-        S = rp.prepare_interpolated_gene_expression_series(gene,self.WEIGHT_BY_CELL_DENSITY)
-        T = qp.prepare_interpolated_gene_expression_series(gene,self.WEIGHT_BY_CELL_DENSITY)
+        S = rp.prepare_interpolated_gene_expression_series(gene,WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+        T = qp.prepare_interpolated_gene_expression_series(gene,WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
         Y1 = S.Y; Y2 = T.Y
         X1 = S.X; X2 = T.X
         bin_times = np.unique(X1) 
