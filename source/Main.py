@@ -241,8 +241,8 @@ class RefQueryAligner:
         ref_processor = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, self.n_artificial_time_points)
         query_processor =  TimeSeriesPreprocessor.Prepocessor(self.query_mat, self.query_time, self.n_q_points)
         
-        S = ref_processor.prepare_interpolated_gene_expression_series(gene, self.WEIGHT_BY_CELL_DENSITY)
-        T = query_processor.prepare_interpolated_gene_expression_series(gene, self.WEIGHT_BY_CELL_DENSITY)
+        S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+        T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
         return [S,T]
     
     def interpolate_genes(self):
