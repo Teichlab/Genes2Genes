@@ -17,6 +17,7 @@ from scipy.cluster.hierarchy import dendrogram, linkage
 from scipy.spatial.distance import squareform
 from scipy.cluster.hierarchy import fcluster
 from scipy.stats import zscore
+from tabulate import tabulate
 import regex 
 
 import OrgAlign as orgalign
@@ -340,7 +341,7 @@ class RefQueryAligner:
         cluster = AgglomerativeClustering(n_clusters=n_clusters, affinity='precomputed', linkage=linkage_method) 
         x = cluster.fit_predict(self.DistMat)
         gene_clusters = orgalign.Utils().check_alignment_clusters(n_clusters, x,
-                                                                self.results, n_cols=5, figsize=(10,10)) 
+                                                                self.results, n_cols=4, figsize=(10,10)) 
         return gene_clusters, x   
     
     def cluster_alignments_v2(self, linkage_method, possible_dist_threshold = None):
@@ -353,7 +354,7 @@ class RefQueryAligner:
         x = fcluster(Z, possible_dist_threshold , criterion='distance') # cluster ids
         n_clusters = len(np.unique(x))
         gene_clusters = orgalign.Utils().check_alignment_clusters(n_clusters, x,
-                                                                self.results, n_cols=5, figsize=(10,10)) 
+                                                                self.results, n_cols=4, figsize=(10,10)) 
         x = x-1 # to make cluster ids 0-indexed
         return gene_clusters, x   
     
@@ -410,6 +411,31 @@ class RefQueryAligner:
             k = k+1
             i=i+1         
 
+            
+
+    def show_cluster_table(self):
+        
+        info = []
+        for cluster_id in range(len(self.mvg_cluster_average_alignments)):
+            mvg_obj = self.mvg_cluster_average_alignments[cluster_id]
+            al_str = mvg_obj.al_visual
+            al_str = al_str.replace('5-state string','')
+            al_str = al_str.replace('Alignment index','')
+            al_str = al_str.replace('Reference index','')
+            al_str = al_str.replace('Query index','')
+
+            n_genes = len(self.gene_clusters[cluster_id])
+            if(n_genes<15):
+                genes = self.gene_clusters[cluster_id]
+            else:
+                genes = self.gene_clusters[cluster_id][1:7] + [' ... '] +  self.gene_clusters[cluster_id][n_genes-7:n_genes]
+            info.append((cluster_id, n_genes, genes, mvg_obj.get_series_match_percentage()[0],mvg_obj.get_series_match_percentage()[1],mvg_obj.get_series_match_percentage()[2], al_str))
+
+        print(tabulate(pd.DataFrame(info),  headers=['cluster_id','n_genes','gene_set','A%','S%','T%','cell-level alignment'],
+                               tablefmt="grid",maxcolwidths=[None,None,None,30,None,None,None]))   
+            
+            
+            
     def show_ordered_alignments(self):
         
         return AlignmentDistMan.AlignmentDist(self).order_genes_by_alignments()

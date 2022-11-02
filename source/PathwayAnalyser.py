@@ -51,7 +51,6 @@ class PathwayAlignmentObj:
         self.aligner = aligner
         
         
-        
 class PathwayEnrichmentAnalyser:
     
     def __init__(self, aligner):
@@ -120,6 +119,33 @@ class PathwayEnrichmentAnalyser:
             self.results.to_csv(file_name + '.csv')
             if(write_markdown):
                 self.results.to_markdown(file_name + '.md')
+                
+                
+    def get_cluster_table(self, write_file=False):
+        self.aligner.compute_cluster_MVG_alignments(MVG_MODE_KL=False)
+        self.aligner.cluster_pathway_results = self.results
+        al_visuals = []
+        c1 = []; c2 = []; c3 = []
+        for cluster_id in self.results[0]:
+            mvg_obj = self.aligner.mvg_cluster_average_alignments[cluster_id]
+            al_str = mvg_obj.al_visual
+            al_str = al_str.replace('5-state string','')
+            al_str = al_str.replace('Alignment index','')
+            al_str = al_str.replace('Reference index','')
+            al_str = al_str.replace('Query index','')
+            al_visuals.append(al_str) 
+            c1.append(mvg_obj.get_series_match_percentage()[0])
+            c2.append(mvg_obj.get_series_match_percentage()[1])
+            c3.append(mvg_obj.get_series_match_percentage()[2])
+        self.aligner.cluster_pathway_results[5] =  al_visuals
+        self.aligner.cluster_pathway_results[6] = c1
+        self.aligner.cluster_pathway_results[7] = c2
+        self.aligner.cluster_pathway_results[8] = c3
+        print(tabulate(self.aligner.cluster_pathway_results,  headers=['cluster','n_genes', 'geneset', 'KEGG_pathways','REACTOME_pathways','cell-level alignment', 'A%','S%','T%'],
+                       tablefmt="grid",maxcolwidths=[None,None,None,25,25,25,80])) 
+
+        if(write_file):
+            self.aligner.cluster_pathway_results.to_markdown('cluster_info' + '.md')
         
     
 # GOLDRATH_NAIVE_VS_EFF_CD8_TCELL_DN
