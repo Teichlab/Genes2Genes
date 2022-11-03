@@ -70,7 +70,7 @@ class VisualUtils():
         meta = meta.sort_index()
         return meta
 
-    def plot_comprehensive_alignment_landscape_plot(self, al_obj, order_S_legend=None, order_T_legend=None, paths_to_display=None):
+    def plot_comprehensive_alignment_landscape_plot(self, al_obj, order_S_legend=None, order_T_legend=None, paths_to_display=None, cmap='viridis'):
 
         landscape_mat = pd.DataFrame(al_obj.landscape_obj.L_matrix)
         if(paths_to_display==None):
@@ -82,7 +82,7 @@ class VisualUtils():
 
         fig, ((ax3, ax1, cbar_ax), (dummy_ax1, ax2, dummy_ax2)) = plt.subplots(nrows=2, ncols=3, figsize=(9*2, 6*2), sharex='col', sharey='row',
                                                                                gridspec_kw={'height_ratios': [2,1], 'width_ratios': [0.5, 1, 0.5]})
-        g = sb.heatmap(landscape_mat, xticklabels=True, yticklabels=True, cmap="viridis", cbar_ax=cbar_ax,  ax=ax1, cbar=False)
+        g = sb.heatmap(landscape_mat, xticklabels=True, yticklabels=True, cmap=cmap, cbar_ax=cbar_ax,  ax=ax1, cbar=False)
         g.tick_params( labelsize=10, labelbottom = True, bottom=True, top = False)#, labeltop=True)
         ax1.set_xlabel('pseudotime')
         x_ticks = np.asarray(range(0,nS_points+1)) 
@@ -126,3 +126,59 @@ class VisualUtils():
         ax1.axis(ymin=0, ymax=nT_points+1, xmin=0, xmax=nS_points+1)
         plt.tight_layout()
         plt.show()
+        
+  
+    # constructs the matrix that gives frequency count of matches between each ref and query pair of timepoints across all alignments the aligner has tested ----- code redundancy with the above function [LATER TODO]   
+    def plot_pairwise_match_count_mat(self, aligner,order_S_legend=None, order_T_legend=None, cmap = 'viridis'):
+        mat = []
+        nT_points = len(aligner.results[0].T.time_points)
+        nS_points = len(aligner.results[0].S.time_points)
+        for i in range(nT_points + 1):
+            mat.append(np.repeat(0.0, nS_points+1))
+
+        # counts of total matches between the each pair of ref and query timepoints across all alignments 
+        for a in aligner.results:
+            matchS = a.match_points_S+1
+            matchT = a.match_points_T+1
+            for i in range(len(matchS)):
+                mat[matchT[i]][matchS[i]] = mat[matchT[i]][matchS[i]] + 1
+        
+        fig, ((ax3, ax1, cbar_ax), (dummy_ax1, ax2, dummy_ax2)) = plt.subplots(nrows=2, ncols=3, figsize=(9*2, 6*2), sharex='col', sharey='row',
+                                                                               gridspec_kw={'height_ratios': [2,1], 'width_ratios': [0.5, 1, 0.5]})
+        g = sb.heatmap(pd.DataFrame(mat), xticklabels=True, yticklabels=True, cmap=cmap, cbar_ax=cbar_ax,  ax=ax1, cbar=False)
+        g.tick_params( labelsize=10, labelbottom = True, bottom=True, top = False)#, labeltop=True)
+        ax1.set_xlabel('pseudotime')
+        x_ticks = np.asarray(range(0,nS_points+1)) 
+        y_ticks = np.asarray(range(0,nT_points+1)) 
+
+        # first barplot (Reference) --- left horizontal barplot
+        p= self.metaS.apply(lambda x: x*100/sum(x), axis=1).plot(kind='barh',stacked=True, title=self.titleS ,color=sb.color_palette('deep', 20), grid = False, ax=ax3,legend=False, width=0.7,align='edge')     
+        handles, labels = ax3.get_legend_handles_labels()
+        for spine in p.spines:
+            p.spines[spine].set_visible(False)
+        if(order_S_legend!=None):
+            dummy_ax1.legend(handles=[handles[idx] for idx in order_S_legend],labels=[labels[idx] for idx in order_S_legend])
+        else:
+            dummy_ax1.legend(handles,labels)
+        # second barplot (Query) --- bottom barplot
+        p = self.metaT.apply(lambda x: x*100/sum(x), axis=1).plot(kind='bar',stacked=True, title=self.titleT, color=sb.color_palette('deep', 20), grid = False, ax=ax2, legend=False,width=0.7,align='edge')
+        handles, labels = ax2.get_legend_handles_labels()
+        for spine in p.spines:
+            p.spines[spine].set_visible(False)
+        if(order_T_legend!=None):
+            dummy_ax2.legend(handles=[handles[idx] for idx in order_T_legend],labels=[labels[idx] for idx in order_T_legend],loc='upper left')
+        else:
+            dummy_ax2.legend(handles,labels, loc='upper left')
+        dummy_ax1.axis('off')
+        dummy_ax2.axis('off')
+        cbar_ax.axis('off')
+
+        ax1.axis(ymin=0, ymax=nT_points+1, xmin=0, xmax=nS_points+1)
+        plt.tight_layout()
+        plt.show()
+        
+        
+        
+        
+        
+        
