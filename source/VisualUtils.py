@@ -8,7 +8,6 @@ import numpy as np
 class VisualUtils():
     
     def __init__(self, adata_ref, adata_query, cell_type_colname, S_len, T_len, titleS = 'Reference', titleT = 'Query'):
-        
         self.titleS = titleS
         self.titleT = titleT
         self.pseudotime2bin_celltypes(adata_ref,S_len)
@@ -128,20 +127,13 @@ class VisualUtils():
         plt.show()
         
   
-    # constructs the matrix that gives frequency count of matches between each ref and query pair of timepoints across all alignments the aligner has tested ----- code redundancy with the above function [LATER TODO]   
+    # constructs the matrix that gives frequency count of matches between each ref and query pair of timepoints across all alignments the aligner has tested 
+    #----- code redundancy with the above function [LATER TODO]   
     def plot_pairwise_match_count_mat(self, aligner,order_S_legend=None, order_T_legend=None, cmap = 'viridis'):
-        mat = []
-        nT_points = len(aligner.results[0].T.time_points)
-        nS_points = len(aligner.results[0].S.time_points)
-        for i in range(nT_points + 1):
-            mat.append(np.repeat(0.0, nS_points+1))
-
-        # counts of total matches between the each pair of ref and query timepoints across all alignments 
-        for a in aligner.results:
-            matchS = a.match_points_S+1
-            matchT = a.match_points_T+1
-            for i in range(len(matchS)):
-                mat[matchT[i]][matchS[i]] = mat[matchT[i]][matchS[i]] + 1
+        
+        mat = aligner.get_pairwise_match_count_mat() 
+        nS_points=len(aligner.results[0].S.time_points)
+        nT_points=len(aligner.results[0].T.time_points)
         
         fig, ((ax3, ax1, cbar_ax), (dummy_ax1, ax2, dummy_ax2)) = plt.subplots(nrows=2, ncols=3, figsize=(9*2, 6*2), sharex='col', sharey='row',
                                                                                gridspec_kw={'height_ratios': [2,1], 'width_ratios': [0.5, 1, 0.5]})
@@ -176,9 +168,6 @@ class VisualUtils():
         ax1.axis(ymin=0, ymax=nT_points+1, xmin=0, xmax=nS_points+1)
         plt.tight_layout()
         plt.show()
-        
-        
-        
         
         
         

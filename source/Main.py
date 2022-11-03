@@ -791,6 +791,24 @@ class RefQueryAligner:
             
             return avg_alignment, tracked_path
         
+        
+    def get_pairwise_match_count_mat(self):
+            mat = []
+            nT_points = len(self.results[0].T.time_points)
+            nS_points = len(self.results[0].S.time_points)
+            for i in range(nT_points + 1):
+                mat.append(np.repeat(0.0, nS_points+1))
+
+            # counts of total matches between the each pair of ref and query timepoints across all alignments 
+            for a in self.results:
+                matchS = a.match_points_S+1
+                matchT = a.match_points_T+1
+                for i in range(len(matchS)):
+                    mat[matchT[i]][matchS[i]] = mat[matchT[i]][matchS[i]] + 1
+
+            return mat
+
+        
     
 class DEAnalyser:
     
@@ -1077,13 +1095,3 @@ class hcolors:
        # al_str = 'IIIDDDWWWIIIMMM'
        # al_str  = 'MMMIIIDDWWDDDIIVVDDMM'
     
-
-
-    
-    
-    
-    
-    
-    
-    
-        
