@@ -7,22 +7,24 @@ import numpy as np
 
 class VisualUtils():
     
-    def __init__(self, adata_ref, adata_query, cell_type_colname, S_len, T_len, titleS = 'Reference', titleT = 'Query'):
-        self.titleS = titleS
-        self.titleT = titleT
-        self.pseudotime2bin_celltypes(adata_ref,S_len)
-        self.pseudotime2bin_celltypes(adata_query,T_len)
-        meta1 = self.plot_cell_type_proportions(adata_ref, cell_type_colname, 'bin_ids',None,'tab20')
-        meta2 = self.plot_cell_type_proportions(adata_query, cell_type_colname, 'bin_ids',None,'tab20')
-        meta1 = self.simple_interpolate(meta1,S_len)
-        meta2 = self.simple_interpolate(meta2,T_len)
-        # to make bins compatible with number of artificial timepoints -- the 0th bin is taken to be empty and the first bin carries all the counts coming under both 0th and 1st bin.
-        meta1.loc[1] = meta1.loc[0] + meta1.loc[1]
-        meta2.loc[1] = meta2.loc[0] + meta2.loc[1]
-        meta1.loc[0] = np.repeat(0.0,len(np.unique(adata_ref.obs[cell_type_colname])) )
-        meta2.loc[0] = np.repeat(0.0,len(np.unique(adata_query.obs[cell_type_colname])))
-        self.metaS = meta1
-        self.metaT = meta2
+    def __init__(self, adata_ref, adata_query, cell_type_colname, S_len, T_len, titleS = 'Reference', titleT = 'Query', mode='comp'):
+        
+        if(mode=='comp'):
+            self.titleS = titleS
+            self.titleT = titleT
+            self.pseudotime2bin_celltypes(adata_ref,S_len)
+            self.pseudotime2bin_celltypes(adata_query,T_len)
+            meta1 = self.plot_cell_type_proportions(adata_ref, cell_type_colname, 'bin_ids',None,'tab20')
+            meta2 = self.plot_cell_type_proportions(adata_query, cell_type_colname, 'bin_ids',None,'tab20')
+            meta1 = self.simple_interpolate(meta1,S_len)
+            meta2 = self.simple_interpolate(meta2,T_len)
+            # to make bins compatible with number of artificial timepoints -- the 0th bin is taken to be empty and the first bin carries all the counts coming under both 0th and 1st bin.
+            meta1.loc[1] = meta1.loc[0] + meta1.loc[1]
+            meta2.loc[1] = meta2.loc[0] + meta2.loc[1]
+            meta1.loc[0] = np.repeat(0.0,len(np.unique(adata_ref.obs[cell_type_colname])) )
+            meta2.loc[0] = np.repeat(0.0,len(np.unique(adata_query.obs[cell_type_colname])))
+            self.metaS = meta1
+            self.metaT = meta2
         
     # annotates cells with their respective bins based on interpolated pseudotime points
     def pseudotime2bin_celltypes(self, adata, n_points):
@@ -169,5 +171,38 @@ class VisualUtils():
         plt.tight_layout()
         plt.show()
         
+    def plot_match_stat_across_all_alignments(self, aligner):
+            
+            nS_points = len(aligner.results[0].S.time_points)
+            nT_points = len(aligner.results[0].T.time_points)
+            S_line = np.repeat(0, nS_points+1)
+            T_line = np.repeat(0, nT_points+1)
+
+            for a in aligner.results:
+                matchS = a.match_points_S+1
+                matchT = a.match_points_T+1
+                for i in range(len(matchS)):
+                    S_line[matchS[i]] =  S_line[matchS[i]] + 1
+                    T_line[matchT[i]] =  T_line[matchT[i]] + 1
+
+            S_line = S_line/np.sum(S_line)*100
+            T_line = T_line/np.sum(T_line)*100
+
+            plt.subplots(2,2,figsize=(17,6))
+            plt.subplot(2,2,1)
+            sb.barplot(np.asarray(range(nS_points+1)) , np.cumsum(S_line), color='midnightblue') 
+            plt.ylabel('cumulative match percentage')
+            plt.subplot(2,2,3)
+            sb.barplot(np.asarray(range(nT_points+1)) , np.cumsum(T_line), color='forestgreen') 
+            plt.ylabel('cumulative match percentage')
+            plt.xlabel('pseudotime bin')
+            plt.subplot(2,2,2)
+            sb.barplot(np.asarray(range(nS_points+1)) , S_line, color='midnightblue') 
+            plt.ylabel('match percentage')
+            plt.subplot(2,2,4)
+            sb.barplot(np.asarray(range(nT_points+1)) , T_line, color='forestgreen') 
+            plt.ylabel('match percentage')
+            plt.xlabel('pseudotime bin')
+            plt.show()
         
         
