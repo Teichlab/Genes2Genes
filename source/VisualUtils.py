@@ -70,10 +70,18 @@ class VisualUtils():
                 meta = meta.append(_temp)
         meta = meta.sort_index()
         return meta
+    
+    def plot_comprehensive(self, al_obj, aligner, mode = 'overall', order_S_legend=None, order_T_legend=None, paths_to_display=None, cmap='viridis'):
+        
+        if(mode=='overall'):
+                # constructs the matrix that gives frequency count of matches between each ref and query pair of timepoints across all alignments the aligner has tested and computes simple optimal alignment based on that matrix            
+            al_str, path = aligner.compute_overall_alignment()
+            self.plot_comprehensive_alignment_landscape_plot(al_obj, landscape_mat =  aligner.get_pairwise_match_count_mat() , order_S_legend=None, order_T_legend=None, paths_to_display=[path], cmap='viridis')
+        else:
+            self.plot_comprehensive_alignment_landscape_plot(al_obj, landscape_mat = pd.DataFrame(al_obj.landscape_obj.L_matrix), order_S_legend=None, order_T_legend=None, paths_to_display=None, cmap=cmap)
 
-    def plot_comprehensive_alignment_landscape_plot(self, al_obj, order_S_legend=None, order_T_legend=None, paths_to_display=None, cmap='viridis'):
+    def plot_comprehensive_alignment_landscape_plot(self, al_obj, landscape_mat, order_S_legend=None, order_T_legend=None, paths_to_display=None, cmap='viridis'):
 
-        landscape_mat = pd.DataFrame(al_obj.landscape_obj.L_matrix)
         if(paths_to_display==None):
             al_obj.landscape_obj.alignment_path.append([0,0])
             paths_to_display=[al_obj.landscape_obj.alignment_path]
@@ -130,57 +138,7 @@ class VisualUtils():
        # plt.show()
         
         if(self.write_file):
-            plt.savefig('comprehensive_alignment_landscape_plot_'+ al_obj.gene +'.pdf',bbox_inches = 'tight')
-        
-  
-    # constructs the matrix that gives frequency count of matches between each ref and query pair of timepoints across all alignments the aligner has tested 
-    #----- code redundancy with the above function [LATER TODO]   
-    def plot_pairwise_match_count_mat(self, aligner,order_S_legend=None, order_T_legend=None, cmap = 'viridis', just_the_mat=False):
-        
-        mat = aligner.get_pairwise_match_count_mat() 
-        nS_points=len(aligner.results[0].S.time_points)
-        nT_points=len(aligner.results[0].T.time_points)
-        
-        if(just_the_mat):
-            sb.heatmap(mat, cmap=cmap, square=True)
-            return 
-        
-        fig, ((ax3, ax1, cbar_ax), (dummy_ax1, ax2, dummy_ax2)) = plt.subplots(nrows=2, ncols=3, figsize=(9*2, 6*2), sharex='col', sharey='row',
-                                                                               gridspec_kw={'height_ratios': [2,1], 'width_ratios': [0.5, 1, 0.5]})
-        g = sb.heatmap(pd.DataFrame(mat).transpose(), xticklabels=True, yticklabels=True, cmap=cmap, cbar_ax=cbar_ax,  ax=ax1, cbar=False)
-        g.tick_params( labelsize=10, labelbottom = True, bottom=True, top = False)#, labeltop=True)
-        ax1.set_xlabel('pseudotime')
-        x_ticks = np.asarray(range(0,nS_points+1)) 
-        y_ticks = np.asarray(range(0,nT_points+1)) 
-
-        # first barplot (Reference) --- left horizontal barplot
-        p= self.metaS.apply(lambda x: x*100/sum(x), axis=1).plot(kind='barh',stacked=True, title=self.titleS ,color=sb.color_palette('deep', 20), grid = False, ax=ax3,legend=False, width=0.7,align='edge')     
-        handles, labels = ax3.get_legend_handles_labels()
-        for spine in p.spines:
-            p.spines[spine].set_visible(False)
-        if(order_S_legend!=None):
-            dummy_ax1.legend(handles=[handles[idx] for idx in order_S_legend],labels=[labels[idx] for idx in order_S_legend])
-        else:
-            dummy_ax1.legend(handles,labels)
-        # second barplot (Query) --- bottom barplot
-        p = self.metaT.apply(lambda x: x*100/sum(x), axis=1).plot(kind='bar',stacked=True, title=self.titleT, color=sb.color_palette('deep', 20), grid = False, ax=ax2, legend=False,width=0.7,align='edge')
-        handles, labels = ax2.get_legend_handles_labels()
-        for spine in p.spines:
-            p.spines[spine].set_visible(False)
-        if(order_T_legend!=None):
-            dummy_ax2.legend(handles=[handles[idx] for idx in order_T_legend],labels=[labels[idx] for idx in order_T_legend],loc='upper left')
-        else:
-            dummy_ax2.legend(handles,labels, loc='upper left')
-        dummy_ax1.axis('off')
-        dummy_ax2.axis('off')
-        cbar_ax.axis('off')
-
-        ax1.axis(ymin=0, ymax=nT_points+1, xmin=0, xmax=nS_points+1)
-        plt.tight_layout()
-      #  plt.show()
-        
-        if(self.write_file):
-            plt.savefig('pairwise_match_count_mat_plot.pdf',bbox_inches = 'tight')
+            plt.savefig('comprehensive_alignment_landscape_plot.pdf',bbox_inches = 'tight')
         
     def plot_match_stat_across_all_alignments(self, aligner):
             

@@ -25,6 +25,8 @@ import MyFunctions
 import TimeSeriesPreprocessor
 import AlignmentDistMan
 
+
+
 class AligmentObj:
     
     def __init__(self,gene, S,T, fwd_DP_obj,bwd_DP_obj, landscape_obj):
@@ -263,8 +265,9 @@ class RefQueryAligner:
        #     state_params=[0.95,0.5,0.4]
  
         if(not(gene in self.pairs.keys())):
-           # print('interpolating sequences')
+            #print('interpolating sequences')
             self.pairs[gene] = self.run_interpolation(gene)
+            print(self.pairs[gene], gene)
             
         S = self.pairs[gene][0] 
         T = self.pairs[gene][1] 
@@ -276,7 +279,7 @@ class RefQueryAligner:
 
         landscapeObj = orgalign.AlignmentLandscape(fwd_DP, None, len(S.mean_trend), len(T.mean_trend), alignment_path, the_5_state_machine = True)
         landscapeObj.collate_fwd() #landscapeObj.plot_alignment_landscape()
-        
+
         return AligmentObj(gene, S,T,fwd_DP,None, landscapeObj)
         
         #return AligmentObj(gene, S,T,fwd_DP,None, None)
@@ -307,7 +310,7 @@ class RefQueryAligner:
         self.results_map = {}
         for a in self.results:
             self.results_map[a.gene] = a
-            
+        print(self.pairs)
 
     def align_all_pairs_no_thread_version(self):
         
@@ -806,12 +809,13 @@ class RefQueryAligner:
                 for i in range(len(matchS)):
                     mat[matchT[i]][matchS[i]] = mat[matchT[i]][matchS[i]] + 1
 
-            return mat
+            return pd.DataFrame(mat) 
 
         # computes simple DP alignment (using match score = pairwise total match count frequency) across all gene-level alignments 
-    def compute_overall_alignment(self):
+    def compute_overall_alignment(self, plot=False):
             mat = self.get_pairwise_match_count_mat()
-            sb.heatmap(mat, cmap='viridis', square=True)
+            if(plot):
+                sb.heatmap(mat, cmap='viridis', square=True)
 
             # DP matrix initialisation 
             opt_cost_M = []
@@ -831,7 +835,7 @@ class RefQueryAligner:
             # running DP
             for j in range(1,len(mat)):
                 for i in range(1,len(mat)):
-                    m_dir = opt_cost_M[i-1,j-1] + mat[i][j]
+                    m_dir = opt_cost_M[i-1,j-1] + mat.loc[i,j]
                     d_dir = opt_cost_M[i,j-1] +  0
                     i_dir = opt_cost_M[i-1,j] +  0
 
@@ -845,6 +849,8 @@ class RefQueryAligner:
                     else:
                         opt = i_dir
                         dir_tracker = 2
+                    #if(i==1 and j==4):
+                    #    print(a, opt_cost_M[i-1,j-1], mat.loc[i,j], opt_cost_M[i,j-1] ,opt_cost_M[i-1,j]  )
 
                     opt_cost_M[i,j] = opt
                     tracker_M[i,j] = dir_tracker
@@ -853,7 +859,9 @@ class RefQueryAligner:
             i = len(tracker_M)-1
             j = len(tracker_M)-1
             alignment_str = ''
+            tracked_path = []
             while(True):
+                tracked_path.append([i,j])
                 if(tracker_M[i,j]==0):
                     alignment_str = 'M' + alignment_str
                     i = i-1
@@ -866,7 +874,8 @@ class RefQueryAligner:
                     i = i-1 
                 if(i==0 and j==0) :
                     break
-            return alignment_str
+            tracked_path.append([0,0])
+            return alignment_str, tracked_path#, opt_cost_M, tracker_M
     
 class DEAnalyser:
     
