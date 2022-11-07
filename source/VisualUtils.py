@@ -7,8 +7,8 @@ import numpy as np
 
 class VisualUtils():
     
-    def __init__(self, adata_ref, adata_query, cell_type_colname, S_len, T_len, titleS = 'Reference', titleT = 'Query', mode='comp'):
-        
+    def __init__(self, adata_ref, adata_query, cell_type_colname, S_len, T_len, titleS = 'Reference', titleT = 'Query', mode='comp', write_file=False):
+        self.write_file = write_file 
         if(mode=='comp'):
             self.titleS = titleS
             self.titleT = titleT
@@ -75,6 +75,7 @@ class VisualUtils():
 
         landscape_mat = pd.DataFrame(al_obj.landscape_obj.L_matrix)
         if(paths_to_display==None):
+            al_obj.landscape_obj.alignment_path.append([0,0])
             paths_to_display=[al_obj.landscape_obj.alignment_path]
         nS_points=len(al_obj.S.time_points)
         nT_points=len(al_obj.T.time_points)
@@ -83,7 +84,7 @@ class VisualUtils():
 
         fig, ((ax3, ax1, cbar_ax), (dummy_ax1, ax2, dummy_ax2)) = plt.subplots(nrows=2, ncols=3, figsize=(9*2, 6*2), sharex='col', sharey='row',
                                                                                gridspec_kw={'height_ratios': [2,1], 'width_ratios': [0.5, 1, 0.5]})
-        g = sb.heatmap(landscape_mat, xticklabels=True, yticklabels=True, cmap=cmap, cbar_ax=cbar_ax,  ax=ax1, cbar=False)
+        g = sb.heatmap(landscape_mat.transpose(), xticklabels=True, yticklabels=True, cmap=cmap, cbar_ax=cbar_ax,  ax=ax1, cbar=False)
         g.tick_params( labelsize=10, labelbottom = True, bottom=True, top = False)#, labeltop=True)
         ax1.set_xlabel('pseudotime')
         x_ticks = np.asarray(range(0,nS_points+1)) 
@@ -118,28 +119,35 @@ class VisualUtils():
         dummy_ax2.axis('off')
         cbar_ax.axis('off')
         if(paths_to_display!=None): # for max 2 paths
-            styles = ['dashed', 'solid']; i = 0 
+            styles = ['solid', 'dashed']; i = 0 
             for path in paths_to_display: 
                 path_x = [p[0]+0.5 for p in path]
                 path_y = [p[1]+0.5 for p in path]
-                ax1.plot(path_x, path_y, color='black', linewidth=3, alpha=0.5, linestyle=styles[i]) # path plot
+                ax1.plot(path_x, path_y, color='black', linewidth=9, alpha=1.0, linestyle=styles[i]) # path plot
                 i=i+1
         ax1.axis(ymin=0, ymax=nT_points+1, xmin=0, xmax=nS_points+1)
         plt.tight_layout()
-        plt.show()
+       # plt.show()
+        
+        if(self.write_file):
+            plt.savefig('comprehensive_alignment_landscape_plot_'+ al_obj.gene +'.pdf',bbox_inches = 'tight')
         
   
     # constructs the matrix that gives frequency count of matches between each ref and query pair of timepoints across all alignments the aligner has tested 
     #----- code redundancy with the above function [LATER TODO]   
-    def plot_pairwise_match_count_mat(self, aligner,order_S_legend=None, order_T_legend=None, cmap = 'viridis'):
+    def plot_pairwise_match_count_mat(self, aligner,order_S_legend=None, order_T_legend=None, cmap = 'viridis', just_the_mat=False):
         
         mat = aligner.get_pairwise_match_count_mat() 
         nS_points=len(aligner.results[0].S.time_points)
         nT_points=len(aligner.results[0].T.time_points)
         
+        if(just_the_mat):
+            sb.heatmap(mat, cmap=cmap, square=True)
+            return 
+        
         fig, ((ax3, ax1, cbar_ax), (dummy_ax1, ax2, dummy_ax2)) = plt.subplots(nrows=2, ncols=3, figsize=(9*2, 6*2), sharex='col', sharey='row',
                                                                                gridspec_kw={'height_ratios': [2,1], 'width_ratios': [0.5, 1, 0.5]})
-        g = sb.heatmap(pd.DataFrame(mat), xticklabels=True, yticklabels=True, cmap=cmap, cbar_ax=cbar_ax,  ax=ax1, cbar=False)
+        g = sb.heatmap(pd.DataFrame(mat).transpose(), xticklabels=True, yticklabels=True, cmap=cmap, cbar_ax=cbar_ax,  ax=ax1, cbar=False)
         g.tick_params( labelsize=10, labelbottom = True, bottom=True, top = False)#, labeltop=True)
         ax1.set_xlabel('pseudotime')
         x_ticks = np.asarray(range(0,nS_points+1)) 
@@ -169,7 +177,10 @@ class VisualUtils():
 
         ax1.axis(ymin=0, ymax=nT_points+1, xmin=0, xmax=nS_points+1)
         plt.tight_layout()
-        plt.show()
+      #  plt.show()
+        
+        if(self.write_file):
+            plt.savefig('pairwise_match_count_mat_plot.pdf',bbox_inches = 'tight')
         
     def plot_match_stat_across_all_alignments(self, aligner):
             
@@ -203,6 +214,9 @@ class VisualUtils():
             sb.barplot(np.asarray(range(nT_points+1)) , T_line, color='forestgreen') 
             plt.ylabel('match percentage')
             plt.xlabel('pseudotime bin')
-            plt.show()
-        
+          #  plt.show()
+            
+            if(self.write_file):
+                plt.savefig('match_stat_plot_across_all_alignments.pdf',bbox_inches = 'tight')
+
         

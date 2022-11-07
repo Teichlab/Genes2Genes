@@ -110,8 +110,13 @@ class PathwayEnrichmentAnalyser:
             _reac=gprofiler_results_all[cluster_id][gprofiler_results_all[cluster_id].source == 'REAC']
             if(len(_kegg)>0 or len(_reac)>0):
                # print('Cluster:', cluster_id, ' ----- ', len(self,aligner.gene_clusters[cluster_id])) 
-                cluster_overrepresentation_results.append([cluster_id,len(self.aligner.gene_clusters[cluster_id]), 
-                                                           self.aligner.gene_clusters[cluster_id],np.asarray(_kegg.name) ,np.asarray(_reac.name) ])
+                n_genes = len(self.aligner.gene_clusters[cluster_id])
+                if(n_genes<15):
+                    genes = self.aligner.gene_clusters[cluster_id]
+                else:
+                    genes = self.aligner.gene_clusters[cluster_id][1:7] + [' ... '] +  self.aligner.gene_clusters[cluster_id][n_genes-7:n_genes]
+
+                cluster_overrepresentation_results.append([cluster_id,len(self.aligner.gene_clusters[cluster_id]),genes,np.asarray(_kegg.name) ,np.asarray(_reac.name) ])
         self.results = pd.DataFrame(cluster_overrepresentation_results)
         print(tabulate(self.results,  headers=['cluster_id','n_genes', 'geneset', 'KEGG_pathways','REACTOME_pathways'],tablefmt="grid",maxcolwidths=[3, 3, 3,30,50,50])) 
         

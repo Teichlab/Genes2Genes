@@ -664,7 +664,7 @@ class DP5:
             j = prev_j
             state = prev_state
             #self.alignment_str = state + self.alignment_str
-        
+
         return tracked_path
                 
             

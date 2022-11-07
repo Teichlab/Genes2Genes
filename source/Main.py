@@ -808,7 +808,65 @@ class RefQueryAligner:
 
             return mat
 
-        
+        # computes simple DP alignment (using match score = pairwise total match count frequency) across all gene-level alignments 
+    def compute_overall_alignment(self):
+            mat = self.get_pairwise_match_count_mat()
+            sb.heatmap(mat, cmap='viridis', square=True)
+
+            # DP matrix initialisation 
+            opt_cost_M = []
+            for i in range(len(mat)):
+                opt_cost_M.append(np.repeat(0.0, len(mat)))
+            opt_cost_M = np.matrix(opt_cost_M) 
+            # backtracker matrix initialisation 
+            tracker_M = []
+            for i in range(len(mat)):
+                tracker_M.append(np.repeat(0.0, len(mat)))
+            tracker_M = np.matrix(tracker_M) 
+            for i in range(1,len(mat)):
+                tracker_M[i,0] = 2
+            for j in range(1,len(mat)):
+                tracker_M[0,j] = 1
+
+            # running DP
+            for j in range(1,len(mat)):
+                for i in range(1,len(mat)):
+                    m_dir = opt_cost_M[i-1,j-1] + mat[i][j]
+                    d_dir = opt_cost_M[i,j-1] +  0
+                    i_dir = opt_cost_M[i-1,j] +  0
+
+                    a = max([m_dir, d_dir, i_dir]) 
+                    if(a==m_dir):
+                        opt = m_dir
+                        dir_tracker = 0
+                    elif(a==d_dir):
+                        opt =d_dir
+                        dir_tracker = 1
+                    else:
+                        opt = i_dir
+                        dir_tracker = 2
+
+                    opt_cost_M[i,j] = opt
+                    tracker_M[i,j] = dir_tracker
+
+            # backtracking
+            i = len(tracker_M)-1
+            j = len(tracker_M)-1
+            alignment_str = ''
+            while(True):
+                if(tracker_M[i,j]==0):
+                    alignment_str = 'M' + alignment_str
+                    i = i-1
+                    j = j-1
+                elif(tracker_M[i,j]==1):
+                    alignment_str = 'D' + alignment_str
+                    j = j-1
+                elif(tracker_M[i,j]==2):
+                    alignment_str = 'I' + alignment_str
+                    i = i-1 
+                if(i==0 and j==0) :
+                    break
+            return alignment_str
     
 class DEAnalyser:
     
