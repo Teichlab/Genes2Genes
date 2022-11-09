@@ -19,6 +19,7 @@ from scipy.cluster.hierarchy import fcluster
 from scipy.stats import zscore
 from tabulate import tabulate
 import regex 
+import anndata
 
 import OrgAlign as orgalign
 import MyFunctions 
@@ -203,11 +204,15 @@ class RefQueryAligner:
         #if(not hasattr(self, 'mean_batch_effect' )):
             #self.mean_batch_effect =  BatchAnalyser.BatchAnalyser().eval_between_system_batch_effect(adata_ref, adata_query)
         
-        if(isinstance(adata_ref.X, scipy.sparse.csr.csr_matrix)):
+        if(isinstance(adata_ref.X, scipy.sparse.csr.csr_matrix) 
+           or isinstance(adata_ref.X,anndata._core.views.SparseCSCView)
+           or isinstance(adata_ref.X,scipy.sparse.csc.csc_matrix)):
             ref_mat = pd.DataFrame(adata_ref.X.todense()) 
         else:
             ref_mat = pd.DataFrame(adata_ref.X) 
-        if(isinstance(adata_query.X, scipy.sparse.csr.csr_matrix)):
+        if(isinstance(adata_query.X, scipy.sparse.csr.csr_matrix) 
+           or isinstance(adata_query.X,anndata._core.views.SparseCSCView)
+           or isinstance(adata_query.X,scipy.sparse.csc.csc_matrix)):
             query_mat = pd.DataFrame(adata_query.X.todense()) 
         else:
             query_mat = pd.DataFrame(adata_query.X)     
@@ -267,7 +272,7 @@ class RefQueryAligner:
         if(not(gene in self.pairs.keys())):
             #print('interpolating sequences')
             self.pairs[gene] = self.run_interpolation(gene)
-            print(self.pairs[gene], gene)
+            #print(self.pairs[gene], gene)
             
         S = self.pairs[gene][0] 
         T = self.pairs[gene][1] 
@@ -310,7 +315,7 @@ class RefQueryAligner:
         self.results_map = {}
         for a in self.results:
             self.results_map[a.gene] = a
-        print(self.pairs)
+        #print(self.pairs)
 
     def align_all_pairs_no_thread_version(self):
         

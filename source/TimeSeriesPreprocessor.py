@@ -230,10 +230,47 @@ class Utils:
     def minmax_normalise(arr):
         
         norm_arr = []
+        arr = np.asarray(arr)
+        arr_max = np.max(arr)
+        arr_min = np.min(arr)
         for i in range(len(arr)):
-            norm_arr.append((arr[i] - np.min(arr))/(np.max(arr) - np.min(arr) )) 
+            norm_arr.append((arr[i] - arr_min )/(arr_max  - arr_min )) 
         return norm_arr
     
 
+    # computes distributional distance under the MML framework
+    def compute_mml_dist(ref_adata_subset,query_adata_subset, gene):
 
+        ref_data = np.asarray(ref_adata_subset[:,gene].X.todense()).flatten()
+        query_data = np.asarray(query_adata_subset[:,gene].X.todense()).flatten()
+        μ_S = np.mean(ref_data)
+        μ_T = np.mean(query_data)
+        σ_S =np.std(ref_data)
+        σ_T =np.std(query_data)
+        #print(μ_S,μ_T)
+        if(not np.any(ref_data)):
+            σ_S = 0.1
+        if(not np.any(query_data)):
+            σ_T = 0.1    
 
+        I_ref_model, I_refdata_g_ref_model = MyFunctions.run_dist_compute_v3(ref_data, μ_S, σ_S) 
+        I_query_model, I_querydata_g_query_model = MyFunctions.run_dist_compute_v3(query_data, μ_T, σ_T) 
+        I_ref_model, I_querydata_g_ref_model = MyFunctions.run_dist_compute_v3(query_data, μ_S, σ_S) 
+        I_query_model, I_refdata_g_query_model = MyFunctions.run_dist_compute_v3(ref_data, μ_T, σ_T) 
+
+        match_encoding_len1 = I_ref_model + I_querydata_g_ref_model + I_refdata_g_ref_model
+        match_encoding_len1 = match_encoding_len1/(len(query_data)+len(ref_data))
+        match_encoding_len2 = I_query_model + I_refdata_g_query_model + I_querydata_g_query_model
+        match_encoding_len2 = match_encoding_len2/(len(query_data)+len(ref_data))
+        match_encoding_len = (match_encoding_len1 + match_encoding_len2 )/2.0 
+
+        null = (I_ref_model + I_refdata_g_ref_model + I_query_model + I_querydata_g_query_model)/(len(query_data)+len(ref_data))
+        match_compression =   match_encoding_len - null 
+        #print(match_compression)
+        #sb.kdeplot(ref_data, fill=True)
+        #sb.kdeplot(query_data, fill=True)
+        return match_compression
+    
+    
+    
+    

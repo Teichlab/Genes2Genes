@@ -71,7 +71,11 @@ class VisualUtils():
         meta = meta.sort_index()
         return meta
     
-    def plot_comprehensive(self, al_obj, aligner, mode = 'overall', order_S_legend=None, order_T_legend=None, paths_to_display=None, cmap='viridis'):
+    def plot_comprehensive(self, aligner, gene = None,mode = 'overall', order_S_legend=None, order_T_legend=None, paths_to_display=None, cmap='viridis'):
+        
+        if(gene==None):
+            gene = aligner.gene_list[0]
+        al_obj = aligner.results_map[gene]
         
         if(mode=='overall'):
                 # constructs the matrix that gives frequency count of matches between each ref and query pair of timepoints across all alignments the aligner has tested and computes simple optimal alignment based on that matrix            
@@ -177,4 +181,14 @@ class VisualUtils():
             if(self.write_file):
                 plt.savefig('match_stat_plot_across_all_alignments.pdf',bbox_inches = 'tight')
 
-        
+    def plot_alignment_path_on_given_matrix(mat, paths, cmap='viridis'):
+        fig,ax = plt.subplots(1,1, figsize=(7,7))
+        sb.heatmap(mat, square=True,  cmap='viridis', ax=ax, cbar=True)  
+        for path in paths: 
+            path_x = [p[0]+0.5 for p in path]
+            path_y = [p[1]+0.5 for p in path]
+            ax.plot(path_y, path_x, color='black', linewidth=6) # path plot
+        plt.xlabel("PAM (Reference)",fontweight='bold')
+        plt.ylabel("LPS (Query)",fontweight='bold')
+        ax.xaxis.tick_top() # x axis on top
+        ax.xaxis.set_label_position('top')
