@@ -71,28 +71,27 @@ class VisualUtils():
         meta = meta.sort_index()
         return meta
     
-    def plot_comprehensive(self, aligner, gene = None,mode = 'overall', order_S_legend=None, order_T_legend=None, paths_to_display=None, cmap='viridis'):
-        
-        if(gene==None):
-            gene = aligner.gene_list[0]
-        al_obj = aligner.results_map[gene]
-        
-        if(mode=='overall'):
-                # constructs the matrix that gives frequency count of matches between each ref and query pair of timepoints across all alignments the aligner has tested and computes simple optimal alignment based on that matrix            
-            al_str, path = aligner.compute_overall_alignment()
-            self.plot_comprehensive_alignment_landscape_plot(al_obj, landscape_mat =  aligner.get_pairwise_match_count_mat() , order_S_legend=None, order_T_legend=None, paths_to_display=[path], cmap='viridis')
+    def plot_comprehensive_alignment_landscape_plot(self, aligner, gene = None, order_S_legend=None, order_T_legend=None, paths_to_display=None, cmap='viridis'):
+
+        if(gene!=None):
+            al_obj = aligner.results_map[gene]
+            if(paths_to_display==None):
+                al_obj.landscape_obj.alignment_path.append([0,0])
+                paths_to_display=[al_obj.landscape_obj.alignment_path]
+            match_points_S = np.unique(al_obj.match_points_S) + 1
+            match_points_T = np.unique(al_obj.match_points_T) + 1
+            landscape_mat = pd.DataFrame(al_obj.landscape_obj.L_matrix)
         else:
-            self.plot_comprehensive_alignment_landscape_plot(al_obj, landscape_mat = pd.DataFrame(al_obj.landscape_obj.L_matrix), order_S_legend=None, order_T_legend=None, paths_to_display=None, cmap=cmap)
-
-    def plot_comprehensive_alignment_landscape_plot(self, al_obj, landscape_mat, order_S_legend=None, order_T_legend=None, paths_to_display=None, cmap='viridis'):
-
-        if(paths_to_display==None):
-            al_obj.landscape_obj.alignment_path.append([0,0])
-            paths_to_display=[al_obj.landscape_obj.alignment_path]
-        nS_points=len(al_obj.S.time_points)
-        nT_points=len(al_obj.T.time_points)
-        match_points_S = np.unique(al_obj.match_points_S) + 1
-        match_points_T = np.unique(al_obj.match_points_T) + 1
+            al_str, path = self.compute_overall_alignment(aligner)
+            match_points_S, match_points_T = self.get_matched_time_points(al_str)
+            match_points_S = np.unique(match_points_S) + 1
+            match_points_T = np.unique(match_points_T) + 1
+            if(paths_to_display==None):
+                paths_to_display=[path]
+            landscape_mat = aligner.get_pairwise_match_count_mat()
+                
+        nS_points=len(aligner.results[0].S.time_points)
+        nT_points=len(aligner.results[0].T.time_points)
 
         fig, ((ax3, ax1, cbar_ax), (dummy_ax1, ax2, dummy_ax2)) = plt.subplots(nrows=2, ncols=3, figsize=(9*2, 6*2), sharex='col', sharey='row',
                                                                                gridspec_kw={'height_ratios': [2,1], 'width_ratios': [0.5, 1, 0.5]})
@@ -137,7 +136,7 @@ class VisualUtils():
                 path_y = [p[1]+0.5 for p in path]
                 ax1.plot(path_x, path_y, color='black', linewidth=9, alpha=1.0, linestyle=styles[i]) # path plot
                 i=i+1
-        ax1.axis(ymin=0, ymax=nT_points+1, xmin=0, xmax=nS_points+1)
+        ax1.axis(ymin=0, ymax=nS_points+1, xmin=0, xmax=nT_points+1)
         plt.tight_layout()
        # plt.show()
         
@@ -192,3 +191,154 @@ class VisualUtils():
         plt.ylabel("LPS (Query)",fontweight='bold')
         ax.xaxis.tick_top() # x axis on top
         ax.xaxis.set_label_position('top')
+        
+    def get_matched_time_points(self, alignment_str):
+        j = 0
+        i = 0
+        FLAG = False
+        matched_points_S = [] 
+        matched_points_T = [] 
+        prev_c = ''
+        for c in alignment_str:
+            if(c=='M'):
+                if(prev_c=='W'):
+                    i=i+1
+                if(prev_c=='V'):
+                    j=j+1
+                matched_points_T.append(i)
+                matched_points_S.append(j)
+                i=i+1
+                j=j+1
+            elif(c=='W'):
+                if(prev_c not in ['W','V']):
+                    i=i-1
+                if(prev_c=='V'):
+                    i=i-1
+                    j=j+1
+                if(prev_c=='D' and not FLAG):
+                    FLAG = True
+                matched_points_T.append(i)
+                matched_points_S.append(j)
+                j=j+1
+            elif(c=='V'):
+                if(prev_c not in ['W','V']):
+                    j=j-1
+                if(prev_c=='W'):
+                    j=j-1
+                    i=i+1
+                if(prev_c=='I' and not FLAG):
+                    FLAG = True
+                matched_points_T.append(i)
+                matched_points_S.append(j)
+                i=i+1
+            elif(c=='I'):
+                if(prev_c=='W'):
+                    i=i+1
+                if(prev_c=='V'):
+                    j=j+1
+                i=i+1
+            elif(c=='D'):
+                if(prev_c=='W'):
+                    i=i+1
+                if(prev_c=='V'):
+                    j=j+1
+                j=j+1
+            prev_c = c
+        assert(len(matched_points_S) == len(matched_points_T)) 
+        return matched_points_S, matched_points_T
+        
+            # computes simple DP alignment (using match score = pairwise total match count frequency) across all gene-level alignments 
+    # gap score is taken as penalising 8% of the total number of tested genes => so that it controls the matching based on the number of 
+    # total matches (i.e. it controls the degree of significant matching) 
+    def compute_overall_alignment(self, aligner, plot=False, GAP_SCORE = None):
+                
+                if(GAP_SCORE==None):
+                    GAP_SCORE= -len(aligner.gene_list)*0.08
+
+                mat = aligner.get_pairwise_match_count_mat()
+                if(plot):
+                    sb.heatmap(mat, cmap='viridis', square=True)
+
+                # DP matrix initialisation 
+                opt_cost_M = []
+                for i in range(mat.shape[0]):
+                    opt_cost_M.append(np.repeat(0.0, mat.shape[1]))
+                opt_cost_M = np.matrix(opt_cost_M) 
+                # backtracker matrix initialisation 
+                tracker_M = []
+                for i in range(mat.shape[0]):
+                    tracker_M.append(np.repeat(0.0, mat.shape[1]))
+                tracker_M = np.matrix(tracker_M) 
+                for i in range(1,mat.shape[0]):
+                    tracker_M[i,0] = 2
+                for j in range(1,mat.shape[1]):
+                    tracker_M[0,j] = 1
+
+                # running DP
+                for j in range(1,mat.shape[1]):
+                    for i in range(1,mat.shape[0]):
+                        m_dir = opt_cost_M[i-1,j-1] + mat.loc[i,j]
+                        d_dir = opt_cost_M[i,j-1] +  GAP_SCORE
+                        i_dir = opt_cost_M[i-1,j] +  GAP_SCORE
+                       # w_dir = opt_cost_M[i,j-1] +  mat.loc[i,j]
+                       # v_dir = opt_cost_M[i-1,j] +  mat.loc[i,j]
+
+                        a = max([m_dir, d_dir, i_dir])  # ,w_dir, v_dir]) 
+                        if(a==d_dir):
+                            opt = d_dir
+                            dir_tracker = 1
+                        elif(a==i_dir):
+                            opt =i_dir
+                            dir_tracker = 2
+                        elif(a==m_dir):
+                            opt = m_dir
+                            dir_tracker = 0
+                       # elif(a==w_dir):
+                      #      opt = w_dir
+                       #     dir_tracker = 3
+                       # elif(a==v_dir):
+                       #     opt = v_dir
+                       #     dir_tracker = 4
+                        #if(i==1 and j==4):
+                        #    print(a, opt_cost_M[i-1,j-1], mat.loc[i,j], opt_cost_M[i,j-1] ,opt_cost_M[i-1,j]  )
+
+                        opt_cost_M[i,j] = opt
+                        tracker_M[i,j] = dir_tracker     
+              #  print(tracker_M)
+
+                # backtracking
+                i = mat.shape[0]-1
+                j = mat.shape[1]-1
+                alignment_str = ''
+                tracked_path = []
+                while(True):
+                  #  print([i,j])
+                    tracked_path.append([i,j])
+                    if(tracker_M[i,j]==0):
+                        alignment_str = 'M' + alignment_str
+                        i = i-1
+                        j = j-1
+                    elif(tracker_M[i,j]==1):
+                        alignment_str = 'D' + alignment_str
+                        j = j-1
+                    elif(tracker_M[i,j]==2):
+                        alignment_str = 'I' + alignment_str
+                        i = i-1 
+                 #   elif(tracker_M[i,j]==3):
+                 #       alignment_str = 'W' + alignment_str
+                 #       j = j-1
+                 #   elif(tracker_M[i,j]==4):
+                 #       alignment_str = 'V' + alignment_str
+                 #       i = i-1
+                    if(i==0 and j==0) :
+                        break
+                tracked_path.append([0,0])
+                return alignment_str, tracked_path#, opt_cost_M, tracker_M
+            
+            
+            
+            
+            
+            
+            
+            

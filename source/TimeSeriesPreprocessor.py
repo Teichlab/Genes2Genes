@@ -52,7 +52,6 @@ class Prepocessor:
         
     
     def create_summary_trends(self, X, Y):
-
         # remember we have 100 synthetic cells per each time point
         mean_trend = []
         std_trend = [] 
@@ -170,11 +169,16 @@ class Prepocessor:
         
         artificial_time_points = []
         for j in range(1,m):
-            artificial_time_points.append((j-1)/(m-1))
+            artificial_time_points.append((j-1)/(m-1))    
+        artificial_time_points.append(1.0)
+        
         artificial_time_points = np.asarray(artificial_time_points)
-        artificial_time_points = artificial_time_points[artificial_time_points > np.min(self.pseudotime_series)] 
-        artificial_time_points = artificial_time_points[artificial_time_points < np.max(self.pseudotime_series)] 
-            
+        artificial_time_points = artificial_time_points[artificial_time_points >= np.min(self.pseudotime_series)] 
+        artificial_time_points = artificial_time_points[artificial_time_points <= np.max(self.pseudotime_series)] 
+        #print( artificial_time_points , '<---- ')
+        if(artificial_time_points[0]!=0.0):
+            artificial_time_points = np.asarray([0] + list(artificial_time_points)) 
+        
         cell_densities = [] 
         cell_weights = {} 
         
@@ -199,6 +203,8 @@ class Prepocessor:
         self.artificial_time_points = artificial_time_points
         
         self.cell_densities = cell_densities
+        
+        #print(self.artificial_time_points)
         return cell_weights, artificial_time_points, cell_densities
     
         #scaled_cell_densities = Utils().minmax_normalise(cell_densities)
