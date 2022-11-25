@@ -1,0 +1,18 @@
+name: genes2genes-env
+channels:
+    - conda-forge
+    - bioconda
+dependencies:
+    - python=3.10
+    - pip
+    - pip:
+        - scanpy
+        - scipy
+        - tabulate
+        - torch
+        - gpytorch
+        - regex
+        - textdistance
+        - Levenshtein
+        - gsea_api
+        - gprofiler
