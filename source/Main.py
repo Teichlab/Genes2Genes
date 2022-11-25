@@ -65,12 +65,12 @@ class AligmentObj:
         self.landscape_obj.plot_alignment_landscape() 
         
     def plotTimeSeries(self, refQueryAlignerObj, plot_cells = False, plot_mean_trend= False):
-        sb.scatterplot(self.S.X, self.S.Y, color = 'forestgreen' ,alpha=0.05)#, label='Ref') 
-        sb.scatterplot(self.T.X, self.T.Y, color = 'midnightblue' ,alpha=0.05)#, label ='Query')
+        sb.scatterplot(x=self.S.X, y=self.S.Y, color = 'forestgreen' ,alpha=0.05)#, label='Ref') 
+        sb.scatterplot(x=self.T.X, y=self.T.Y, color = 'midnightblue' ,alpha=0.05)#, label ='Query')
       #  plt.legend(loc='upper left')
         if(plot_cells):
-            sb.scatterplot(refQueryAlignerObj.ref_time, np.asarray(refQueryAlignerObj.ref_mat[self.gene]), color = 'forestgreen' ) 
-            sb.scatterplot(refQueryAlignerObj.query_time, np.asarray(refQueryAlignerObj.query_mat[self.gene]), color = 'midnightblue' )
+            sb.scatterplot(x=refQueryAlignerObj.ref_time, y=np.asarray(refQueryAlignerObj.ref_mat[self.gene]), color = 'forestgreen' ) 
+            sb.scatterplot(x=refQueryAlignerObj.query_time, y=np.asarray(refQueryAlignerObj.query_mat[self.gene]), color = 'midnightblue' )
         plt.title(self.gene)
         plt.xlabel('pseudotime')
         plt.ylabel('log1p expression')
@@ -79,8 +79,8 @@ class AligmentObj:
             self.plot_mean_trends() 
             
     def plotTimeSeriesAlignment(self):  
-        sb.scatterplot(self.S.X, self.S.Y, color = 'forestgreen' ,alpha=0.05)#, label='Ref') 
-        sb.scatterplot(self.T.X, self.T.Y, color = 'midnightblue' ,alpha=0.05)#, label ='Query') 
+        sb.scatterplot(x=self.S.X, y=self.S.Y, color = 'forestgreen' ,alpha=0.05)#, label='Ref') 
+        sb.scatterplot(x=self.T.X, y=self.T.Y, color = 'midnightblue' ,alpha=0.05)#, label ='Query') 
       #  plt.legend(loc='upper left')
         self.plot_mean_trends() 
         plt.title(self.gene)
