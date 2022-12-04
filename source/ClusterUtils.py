@@ -78,9 +78,9 @@ def run_hierarchical_clustering(aligner):
             elif(al_state=='V'):
                 E[i,j] = 3
             elif(al_state=='D'):
-                E[i,j] = 4
-            elif(al_state=='I'):
                 E[i,j] = 5
+            elif(al_state=='I'):
+                E[i,j] = 6
     E = pd.DataFrame(E)
     model = AgglomerativeClustering(n_clusters=None, affinity='euclidean', linkage='ward',distance_threshold = 25)
     model.fit(E)
