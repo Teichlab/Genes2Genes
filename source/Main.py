@@ -246,8 +246,8 @@ class RefQueryAligner:
        # self.query_processor =  TimeSeriesPreprocessor.Prepocessor(self.query_mat, self.query_time, n_q_points)
         
     def run_interpolation(self, gene):
-        ref_processor = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, self.n_artificial_time_points)
-        query_processor =  TimeSeriesPreprocessor.Prepocessor(self.query_mat, self.query_time, self.n_q_points)
+        ref_processor = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, self.n_artificial_time_points, self.WINDOW_SIZE)
+        query_processor =  TimeSeriesPreprocessor.Prepocessor(self.query_mat, self.query_time, self.n_q_points, self.WINDOW_SIZE)
         
         S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
         T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
@@ -307,7 +307,7 @@ class RefQueryAligner:
         return AligmentObj(gene, S,T,fwd_DP, bwd_DP, landscapeObj)
             
     def align_all_pairs(self):
-        
+        print('WINDOW_SIZE=',self.WINDOW_SIZE)
         with Pool(self.n_threads) as p:
             results = list(tqdm_notebook(p.imap(self.align_single_pair, self.gene_list), total=len(self.gene_list)))
         self.results = results 

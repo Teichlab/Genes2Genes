@@ -17,15 +17,13 @@ from scipy.cluster.hierarchy import dendrogram, linkage
 from scipy.spatial.distance import squareform
 from scipy.cluster.hierarchy import fcluster
 from scipy.stats import zscore
+from tabulate import tabulate
 import regex 
 
 import OrgAlign as orgalign
 import MyFunctions 
 import TimeSeriesPreprocessor
 import AlignmentDistMan
-#import BatchAnalyser
-
-#lock = multiprocessing.Lock()
 
 class AligmentObj:
     
@@ -51,7 +49,6 @@ class AligmentObj:
             self.run_DEAnalyser() 
         except Exception as e:
             print(str(e),gene)
-          #  print('DEAnalyser error occurred - potential error encountered: wilcoxon test --- ValueError: zero_method wilcox and pratt do not work if x - y is zero for all elements.', gene)
 
     def print(self):
         print('Fwd opt cost', self.fwd_DP.opt_cost)
@@ -245,8 +242,8 @@ class RefQueryAligner:
         ref_processor = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, self.n_artificial_time_points)
         query_processor =  TimeSeriesPreprocessor.Prepocessor(self.query_mat, self.query_time, self.n_q_points)
         
-        S = ref_processor.prepare_interpolated_gene_expression_series(gene, self.WEIGHT_BY_CELL_DENSITY)
-        T = query_processor.prepare_interpolated_gene_expression_series(gene, self.WEIGHT_BY_CELL_DENSITY)
+        S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+        T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
         return [S,T]
     
     def interpolate_genes(self):
@@ -344,7 +341,7 @@ class RefQueryAligner:
         cluster = AgglomerativeClustering(n_clusters=n_clusters, affinity='precomputed', linkage=linkage_method) 
         x = cluster.fit_predict(self.DistMat)
         gene_clusters = orgalign.Utils().check_alignment_clusters(n_clusters, x,
-                                                                self.results, n_cols=5, figsize=(10,10)) 
+                                                                self.results, n_cols=4, figsize=(10,10)) 
         return gene_clusters, x   
     
     def cluster_alignments_v2(self, linkage_method, possible_dist_threshold = None):
@@ -357,7 +354,7 @@ class RefQueryAligner:
         x = fcluster(Z, possible_dist_threshold , criterion='distance') # cluster ids
         n_clusters = len(np.unique(x))
         gene_clusters = orgalign.Utils().check_alignment_clusters(n_clusters, x,
-                                                                self.results, n_cols=5, figsize=(10,10)) 
+                                                                self.results, n_cols=4, figsize=(10,10)) 
         x = x-1 # to make cluster ids 0-indexed
         return gene_clusters, x   
     
@@ -414,6 +411,31 @@ class RefQueryAligner:
             k = k+1
             i=i+1         
 
+            
+
+    def show_cluster_table(self):
+        
+        info = []
+        for cluster_id in range(len(self.mvg_cluster_average_alignments)):
+            mvg_obj = self.mvg_cluster_average_alignments[cluster_id]
+            al_str = mvg_obj.al_visual
+            al_str = al_str.replace('5-state string','')
+            al_str = al_str.replace('Alignment index','')
+            al_str = al_str.replace('Reference index','')
+            al_str = al_str.replace('Query index','')
+
+            n_genes = len(self.gene_clusters[cluster_id])
+            if(n_genes<15):
+                genes = self.gene_clusters[cluster_id]
+            else:
+                genes = self.gene_clusters[cluster_id][1:7] + [' ... '] +  self.gene_clusters[cluster_id][n_genes-7:n_genes]
+            info.append((cluster_id, n_genes, genes, mvg_obj.get_series_match_percentage()[0],mvg_obj.get_series_match_percentage()[1],mvg_obj.get_series_match_percentage()[2], al_str))
+
+        print(tabulate(pd.DataFrame(info),  headers=['cluster_id','n_genes','gene_set','A%','S%','T%','cell-level alignment'],
+                               tablefmt="grid",maxcolwidths=[None,None,None,30,None,None,None]))   
+            
+            
+            
     def show_ordered_alignments(self):
         
         return AlignmentDistMan.AlignmentDist(self).order_genes_by_alignments()
@@ -445,8 +467,8 @@ class RefQueryAligner:
         # correlation coefficient trend over sliding window of 10 bins
         rp = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, n_bins)
         qp =  TimeSeriesPreprocessor.Prepocessor(self.query_mat, self.query_time, n_bins)
-        S = rp.prepare_interpolated_gene_expression_series(gene,self.WEIGHT_BY_CELL_DENSITY)
-        T = qp.prepare_interpolated_gene_expression_series(gene,self.WEIGHT_BY_CELL_DENSITY)
+        S = rp.prepare_interpolated_gene_expression_series(gene,WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+        T = qp.prepare_interpolated_gene_expression_series(gene,WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
         Y1 = S.Y; Y2 = T.Y
         X1 = S.X; X2 = T.X
         bin_times = np.unique(X1) 
@@ -709,19 +731,6 @@ class RefQueryAligner:
 
             plt.xlabel("S",fontweight='bold')
             plt.ylabel("T",fontweight='bold')
-
-
-
-
-        
-        
-        
-        
-        
-        
-        
-        
-        
             
     def get_cluster_average_alignments(self, cluster_id, deterministic=True):
         
@@ -1009,24 +1018,6 @@ class DEAnalyser:
             #print('**** ', self.match_points_S[i], self.match_points_T[i], np.log2(S_bin_mean/T_bin_mean))
                
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     # Sanity checker for non-significant DE in matched regions
     def get_DE_info_for_matched_regions(self):
         
@@ -1078,10 +1069,6 @@ class hcolors:
     INSERT = '\033[91m'
     DELETE = '\033[91m'
     STOP = '\033[0m'    
-    
-    
-    
-    
     
     #### test cases for 1-1 match point retrieval:
        # al_str = 'MMMVVVVVVWWWWWW'

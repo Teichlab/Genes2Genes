@@ -52,7 +52,6 @@ class Prepocessor:
         
     
     def create_summary_trends(self, X, Y):
-
         # remember we have 100 synthetic cells per each time point
         mean_trend = []
         std_trend = [] 
@@ -170,11 +169,13 @@ class Prepocessor:
         
         artificial_time_points = []
         for j in range(1,m):
-            artificial_time_points.append((j-1)/(m-1))
+            artificial_time_points.append((j-1)/(m-1))    
+        artificial_time_points.append(1.0)
         artificial_time_points = np.asarray(artificial_time_points)
-        artificial_time_points = artificial_time_points[artificial_time_points > np.min(self.pseudotime_series)] 
-        artificial_time_points = artificial_time_points[artificial_time_points < np.max(self.pseudotime_series)] 
-            
+        artificial_time_points = artificial_time_points[artificial_time_points >= np.min(self.pseudotime_series)] 
+        artificial_time_points = artificial_time_points[artificial_time_points <= np.max(self.pseudotime_series)] 
+        #print( artificial_time_points , '<---- ')
+
         cell_densities = [] 
         cell_weights = {} 
         
@@ -199,6 +200,8 @@ class Prepocessor:
         self.artificial_time_points = artificial_time_points
         
         self.cell_densities = cell_densities
+        
+        #print(self.artificial_time_points)
         return cell_weights, artificial_time_points, cell_densities
     
         #scaled_cell_densities = Utils().minmax_normalise(cell_densities)
@@ -230,39 +233,47 @@ class Utils:
     def minmax_normalise(arr):
         
         norm_arr = []
+        arr = np.asarray(arr)
+        arr_max = np.max(arr)
+        arr_min = np.min(arr)
         for i in range(len(arr)):
-            norm_arr.append((arr[i] - np.min(arr))/(np.max(arr) - np.min(arr) )) 
+            norm_arr.append((arr[i] - arr_min )/(arr_max  - arr_min )) 
         return norm_arr
     
 
+    # computes distributional distance under the MML framework
+    def compute_mml_dist(ref_adata_subset,query_adata_subset, gene):
 
+        ref_data = np.asarray(ref_adata_subset[:,gene].X.todense()).flatten()
+        query_data = np.asarray(query_adata_subset[:,gene].X.todense()).flatten()
+        μ_S = np.mean(ref_data)
+        μ_T = np.mean(query_data)
+        σ_S =np.std(ref_data)
+        σ_T =np.std(query_data)
+        #print(μ_S,μ_T)
+        if(not np.any(ref_data)):
+            σ_S = 0.1
+        if(not np.any(query_data)):
+            σ_T = 0.1    
 
+        I_ref_model, I_refdata_g_ref_model = MyFunctions.run_dist_compute_v3(ref_data, μ_S, σ_S) 
+        I_query_model, I_querydata_g_query_model = MyFunctions.run_dist_compute_v3(query_data, μ_T, σ_T) 
+        I_ref_model, I_querydata_g_ref_model = MyFunctions.run_dist_compute_v3(query_data, μ_S, σ_S) 
+        I_query_model, I_refdata_g_query_model = MyFunctions.run_dist_compute_v3(ref_data, μ_T, σ_T) 
 
+        match_encoding_len1 = I_ref_model + I_querydata_g_ref_model + I_refdata_g_ref_model
+        match_encoding_len1 = match_encoding_len1/(len(query_data)+len(ref_data))
+        match_encoding_len2 = I_query_model + I_refdata_g_query_model + I_querydata_g_query_model
+        match_encoding_len2 = match_encoding_len2/(len(query_data)+len(ref_data))
+        match_encoding_len = (match_encoding_len1 + match_encoding_len2 )/2.0 
 
-
-
-
-
-# ATTIC CODE
-            #print(weighted_std)
-   #     if(summary_series_obj.time_points[0]>=artificial_time_points[intpl_i]):
-   #         closest_bin_time_point_id = 0
-   #     else:
-   #         closest_bin_time_point_id = np.max(np.where(summary_series_obj.time_points <= artificial_time_points[intpl_i] ))+1
-        
-       # print('closest bin: ', closest_bin_time_point_id)
-    #    if(closest_bin_time_point_id !=0):
-    #        dist_var = (summary_series_obj.std_trend[closest_bin_time_point_id] + summary_series_obj.std_trend[closest_bin_time_point_id-1])/2.0
-            #print(' mean : ',summary_series_obj.std_trend[closest_bin_time_point_id] ,  summary_series_obj.std_trend[closest_bin_time_point_id-1] )
-     #   else:
-     #       dist_var = summary_series_obj.std_trend[closest_bin_time_point_id]
-        # assign variance of closest time bin cells of actual data
-        
-     #   dist_var = np.mean(summary_series_obj.std_trend) # assign mean variance across all cells
-       # dist_var = 0.1
-        
-        
-        
-        
-        
-        
+        null = (I_ref_model + I_refdata_g_ref_model + I_query_model + I_querydata_g_query_model)/(len(query_data)+len(ref_data))
+        match_compression =   match_encoding_len - null 
+        #print(match_compression)
+        #sb.kdeplot(ref_data, fill=True)
+        #sb.kdeplot(query_data, fill=True)
+        return match_compression
+    
+    
+    
+    

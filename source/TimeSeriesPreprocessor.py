@@ -42,9 +42,10 @@ class Prepocessor:
             GEX_MAT =args[0] 
             pseudotime_series = args[1]
             m = args[2]
+            WINDOW_SIZE = args[3]
             self.GEX_MAT = GEX_MAT
             self.pseudotime_series = pseudotime_series
-            self.compute_cell_density_trend(m=m) 
+            self.compute_cell_density_trend(WINDOW_SIZE, m=m) 
         else:
             self.GEX_MAT = None
             self.pseudotime_series = None
@@ -165,8 +166,9 @@ class Prepocessor:
         return obj
 
     
-    def compute_cell_density_trend(self, WINDOW_SIZE = 0.15, m=50):
+    def compute_cell_density_trend(self, WINDOW_SIZE = 0.1, m=50): # TODO LATEST TEST 07/01/2023 earlier used 0.15 for early Jan runs
         
+        #print('Window size = ', WINDOW_SIZE)
         artificial_time_points = []
         for j in range(1,m):
             artificial_time_points.append((j-1)/(m-1))    
@@ -278,5 +280,31 @@ class Utils:
         return match_compression
     
     
+def refine_pseudotime(adata):
+    average_ctype_mean_times = {}
+
+    for ctype in np.unique(adata.obs.ANNOTATION_COMB):
+        average_ctype_mean_times[ctype] = np.mean(adata[adata.obs.ANNOTATION_COMB==ctype].obs.time)
     
+    adata.obs['refined_time'] = adata.obs.time 
+    
+    ctype_Ls = {}
+    ctype_Us = {}
+
+    for ctype in np.unique(adata.obs.ANNOTATION_COMB):    
+        ctype_adata = adata[adata.obs.ANNOTATION_COMB==ctype]
+        Q1,Q3 = np.percentile( ctype_adata.obs.time, [25,75])
+        IQR = Q3-Q1
+        U = Q3+(1.5 * IQR)
+        L = Q1-(1.5 * IQR)
+        ctype_Ls[ctype] = L
+        ctype_Us[ctype] = U
+
+
+    for i in range(adata.shape[0]):
+        ctype = adata.obs.ANNOTATION_COMB[i]
+        if(adata.obs.time[i]<ctype_Ls[ctype] or adata.obs.time[i]>ctype_Us[ctype]):
+            adata.obs['refined_time'][i] = average_ctype_mean_times[ctype] 
+            
+    return Utils.minmax_normalise(np.asarray(adata.obs.refined_time))
     
