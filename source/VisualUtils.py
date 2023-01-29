@@ -18,11 +18,19 @@ class VisualUtils():
             meta2 = self.plot_cell_type_proportions(adata_query, cell_type_colname, 'bin_ids',None,'tab20')
             meta1 = self.simple_interpolate(meta1,S_len)
             meta2 = self.simple_interpolate(meta2,T_len)
-            # to make bins compatible with number of artificial timepoints -- the 0th bin is taken to be empty and the first bin carries all the counts coming under both 0th and 1st bin.
-            meta1.loc[1] = meta1.loc[0] + meta1.loc[1]
-            meta2.loc[1] = meta2.loc[0] + meta2.loc[1]
-            meta1.loc[0] = np.repeat(0.0,len(np.unique(adata_ref.obs[cell_type_colname])) )
-            meta2.loc[0] = np.repeat(0.0,len(np.unique(adata_query.obs[cell_type_colname])))
+          #  meta1.loc[1] = meta1.loc[0] + meta1.loc[1]
+          #  meta2.loc[1] = meta2.loc[0] + meta2.loc[1]
+          #  meta1.loc[0] = np.repeat(0.0,len(np.unique(adata_ref.obs[cell_type_colname])) )
+          #  meta2.loc[0] = np.repeat(0.0,len(np.unique(adata_query.obs[cell_type_colname])))
+            
+            temp1 = pd.Series(np.repeat(0.0,len(np.unique(adata_ref.obs[cell_type_colname])) ))
+            temp1.index = meta1.columns
+            meta1 = pd.concat([pd.DataFrame(temp1).transpose(),meta1.loc[:]]).reset_index(drop=True)
+            
+            temp2 = pd.Series(np.repeat(0.0,len(np.unique(adata_query.obs[cell_type_colname])) ))
+            temp2.index = meta2.columns
+            meta2 = pd.concat([pd.DataFrame(temp2).transpose(),meta2.loc[:]]).reset_index(drop=True)
+            
             self.metaS = meta1
             self.metaT = meta2
         
@@ -30,12 +38,12 @@ class VisualUtils():
     def pseudotime2bin_celltypes(self, adata, n_points):
 
         adata.obs['bin_ids'] = np.repeat(0,adata.shape[0])
-        bin_margins =  np.linspace(0,1,n_points+2)
+        bin_margins =  np.linspace(0,1,n_points+1)
         bin_ids = []
 
         for i in range(len(bin_margins)-1):
-            if(i==len(bin_margins)-1):
-                break
+            #if(i==len(bin_margins)-1):
+            #    break
             #print(bin_margins[i],i)
             if(i<len(bin_margins)-2):
                 logic =  np.logical_and(adata.obs.time < bin_margins[i+1], adata.obs.time >= bin_margins[i])
@@ -51,7 +59,8 @@ class VisualUtils():
         meta['COUNTER'] = 1
         meta = meta.groupby([covariate_colname,cell_type_colname])['COUNTER'].sum().unstack()
         meta = meta.fillna(0)
-        meta = meta.sort_values(by=covariate_colname, key=sorter)
+        #meta = meta.transpose()
+        #meta = meta.sort_values(by=covariate_colname, key=sorter)
         if(plot):
             p = meta.apply(lambda x: x*100/sum(x), axis=1).plot(kind='bar',stacked=True, color=sb.color_palette(color_scheme_name, 20), grid = False)
             #p.legend(labels = ['not infected','infected'], loc='center left', bbox_to_anchor=(1.25, 0.5), ncol=1)
@@ -59,7 +68,7 @@ class VisualUtils():
         return meta
 
     def simple_interpolate(self,meta, n_points):
-        for i in range(n_points+1):
+        for i in range(n_points):
             #print(k)
             if(i not in meta.index):
                 k=i
@@ -180,9 +189,9 @@ class VisualUtils():
             if(self.write_file):
                 plt.savefig('match_stat_plot_across_all_alignments.pdf',bbox_inches = 'tight')
 
-    def plot_alignment_path_on_given_matrix(mat, paths, cmap='viridis'):
+    def plot_alignment_path_on_given_matrix(mat, paths, cmap='viridis',annot=True):
         fig,ax = plt.subplots(1,1, figsize=(7,7))
-        sb.heatmap(mat, square=True,  cmap='viridis', ax=ax, cbar=True)  
+        sb.heatmap(mat, square=True,  cmap='viridis', ax=ax, cbar=True, annot=annot,fmt='g')  
         for path in paths: 
             path_x = [p[0]+0.5 for p in path]
             path_y = [p[1]+0.5 for p in path]

@@ -42,7 +42,8 @@ def negative_log_likelihood(μ,σ,N,data):
         return sum_term
 
 def compute_expected_Fisher_matrix(μ,σ,N):
-    return torch.tensor([[N/(σ**2),0],[0,(2*(N**2)/(σ**4))]]) # depends on σ
+    return torch.tensor([[N/(σ**2),0],[0,(2*N)/(σ**2)]]) # depends on σ
+ ####  ---- expected_Fisher = compute_expected_Fisher_matrix(μ_base,σ_base,N) # compute the closed form of matrix determinant instead 
     
 #def compute_observed_Fisher_matrix(μ,σ):
 #    return torch.autograd.functional.hessian(negative_log_likelihood ,(μ,σ))
@@ -59,8 +60,6 @@ def I_conway_const(d):
 
 def run_dist_compute_v3(data_to_model,μ_base, σ_base, print_stat=False):
 
-    #global data
-    #global N 
     if(len(data_to_model)==0):
         return 
     μ_base = torch.tensor(μ_base); σ_base=torch.tensor(σ_base) 
@@ -68,16 +67,13 @@ def run_dist_compute_v3(data_to_model,μ_base, σ_base, print_stat=False):
     N = torch.tensor(len(data_to_model), requires_grad=False)
     
     # MODEL1 - using base model to encode data
-    ts = time.time()
-    expected_Fisher = compute_expected_Fisher_matrix(μ_base,σ_base,N)
-    te = time.time()
-    #  print('elapsed exp fisher - ', te-ts)
-    ts = time.time()
-    L_θ = negative_log_likelihood(μ_base,σ_base,N,data) - (N*np.log(0.001)) 
-    te = time.time()
-    #  print('elapsed neg log - ', te-ts)
-    # compute the I(base_model) 
-    I_base_model = (I_conway_const(d=2) + I_prior(μ_base,σ_base) + (0.5*torch.log(torch.det(expected_Fisher)))) 
+
+    determinant_of_the_expected_fisher = (2*(N**2))/(σ_base**4)   #torch.det(expected_Fisher) CLOSED FORM
+
+    L_θ = negative_log_likelihood(μ_base,σ_base,N,data) - (N*np.log(0.001)) # Accuracy of Measurement epsilon = 0.001
+    
+    #I_base_model = (I_conway_const(d=2) + I_prior(μ_base,σ_base) + (0.5*torch.log(torch.det(expected_Fisher)))) 
+    I_base_model = (I_conway_const(d=2) + I_prior(μ_base,σ_base) + (0.5*torch.log(determinant_of_the_expected_fisher))) 
     # compute the I(data|base_model)
     I_data_g_base_model = L_θ  + torch.tensor(1.0)
     

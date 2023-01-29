@@ -321,7 +321,16 @@ class DP5:
                 cost_D, cost_I = self.compute_cell(i-1,0, only_non_match=True)
             elif(isinstance(self.S, TimeSeriesPreprocessor.SummaryTimeSeriesMVG)):
                 cost_D, cost_I = self.compute_cell_as_MVG(i-1,0, only_non_match=True)
-            self.DP_I_matrix[i,0] = self.DP_I_matrix[i-1,0] + cost_I + self.FSA.I_ii  
+                
+            #self.DP_I_matrix[i,0] = self.DP_I_matrix[i-1,0] + cost_I + self.FSA.I_ii  
+            
+            #  [START] NEW TEST 21122022 ====
+            if(i==1):
+                self.DP_I_matrix[i,0] = self.DP_I_matrix[i-1,0] + cost_I -np.log(1/3) 
+            else:
+                self.DP_I_matrix[i,0] = self.DP_I_matrix[i-1,0] + cost_I + self.FSA.I_ii 
+            # [END] NEW TEST 21122022 ====
+            
             #self.backtrackers_I[i][0] = [i-1,0,4] 
             if(not self.backward_run):
                 self.backtrackers_I[i][0] = [i-1,0,4] 
@@ -338,7 +347,16 @@ class DP5:
                 cost_D, cost_I =self.compute_cell(0,j-1, only_non_match=True)
             elif(isinstance(self.S, TimeSeriesPreprocessor.SummaryTimeSeriesMVG)):
                 cost_D, cost_I =self.compute_cell_as_MVG(0,j-1, only_non_match=True)
-            self.DP_D_matrix[0,j] = self.DP_D_matrix[0,j-1] + cost_D + self.FSA.I_dd
+                
+            #self.DP_D_matrix[0,j] = self.DP_D_matrix[0,j-1] + cost_D + self.FSA.I_dd
+            
+            #  [START] NEW TEST 21122022 ====
+            if(j==1):
+                self.DP_D_matrix[0,j] = self.DP_D_matrix[0,j-1] + cost_D -np.log(1/3) 
+            else:
+                self.DP_D_matrix[0,j] = self.DP_D_matrix[0,j-1] + cost_D + self.FSA.I_dd
+            # [END] NEW TEST 21122022 ====
+            
             #self.backtrackers_D[0][j] = [0,j-1,3] 
             if(not self.backward_run):
                 self.backtrackers_D[0][j] = [0,j-1,3]  
@@ -357,12 +375,30 @@ class DP5:
                    
                 if(not self.backward_run):
                     # filling M matrix
-                    temp_m = [  self.DP_M_matrix[i-1,j-1] + match_len + self.FSA.I_mm, # 0
+                   # temp_m = [  self.DP_M_matrix[i-1,j-1] + match_len + self.FSA.I_mm, # 0
+                   #             self.DP_W_matrix[i-1,j-1] + match_len  + self.FSA.I_mw, # 1
+                   #             self.DP_V_matrix[i-1,j-1] + match_len + self.FSA.I_mv, # 2
+                   #             self.DP_D_matrix[i-1,j-1]  + match_len + self.FSA.I_md, # 3
+                   #             self.DP_I_matrix[i-1,j-1] + match_len  + self.FSA.I_mi  # 4
+                   #          ] 
+                    #  [START] NEW TEST 21122022 ====
+                    if(i==1 and j==1):
+                        temp_m = [  self.DP_M_matrix[i-1,j-1] + match_len -np.log(1/3), #self.FSA.I_mm, # 0
+                               np.inf,# self.DP_W_matrix[i-1,j-1] + match_len + np.inf, # -np.log(1/5), #+ self.FSA.I_mw, # 1
+                               np.inf,# self.DP_V_matrix[i-1,j-1] + match_len + np.inf, # -np.log(1/5),  #+ self.FSA.I_mv, # 2
+                               np.inf,# self.DP_D_matrix[i-1,j-1]  + match_len -np.log(1/5), #+ self.FSA.I_md, # 3
+                               np.inf# self.DP_I_matrix[i-1,j-1] + match_len  -np.log(1/5) #+ self.FSA.I_mi  # 4
+                             ]  
+                    else:      
+                        temp_m = [  self.DP_M_matrix[i-1,j-1] + match_len + self.FSA.I_mm, # 0
                                 self.DP_W_matrix[i-1,j-1] + match_len  + self.FSA.I_mw, # 1
                                 self.DP_V_matrix[i-1,j-1] + match_len + self.FSA.I_mv, # 2
                                 self.DP_D_matrix[i-1,j-1]  + match_len + self.FSA.I_md, # 3
                                 self.DP_I_matrix[i-1,j-1] + match_len  + self.FSA.I_mi  # 4
                              ] 
+                    
+                    # [END] NEW TEST 21122022 ====
+                    
                     # filling W matrix 
                     temp_w = [  self.DP_M_matrix[i,j-1] + match_len + self.FSA.I_wm, 
                                 self.DP_W_matrix[i,j-1]  + match_len  + self.FSA.I_ww, 
