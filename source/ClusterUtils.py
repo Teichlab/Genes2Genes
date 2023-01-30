@@ -1,9 +1,12 @@
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics.pairwise import euclidean_distances
+
+import matplotlib.pyplot as plt
 from scipy.spatial import distance
 import scipy.cluster.hierarchy as sch
 import matplotlib.pyplot as plt
 from numpy import argmax
+
 import numpy as np
 import pandas as pd
 import seaborn as sb
@@ -55,6 +58,38 @@ def plot_different_alignments(paths, S_len, T_len, ax, mat=[]): # pass alignment
         plt.ylabel("T",fontweight='bold')
         
         
+<<<<<<< HEAD
+def run_hierarchical_clustering(aligner):
+    
+    aligment_strings = []
+    for i in range(len(aligner.gene_list)):
+        aligment_strings.append(aligner.results[i].alignment_str)
+    
+    longestL = np.max([len(a) for a in aligment_strings]) # 30
+    
+    # Numerical Encoding of 5-state Alignment strings
+    # None - 0; M - 1; W - 2; V - 3; D - 4; I - 5 
+    E = [] # alignment encoding matrix
+    for i in range(len(aligment_strings)):
+        E.append(np.repeat(0, longestL)) 
+    E = np.matrix(E) 
+
+    for i in range(len(aligment_strings)):
+        for j in range(len(aligment_strings[i])):
+            al_state = aligment_strings[i][j]
+            if(al_state=='M'):
+                E[i,j] = 1
+            elif(al_state=='W'):
+                E[i,j] = 2
+            elif(al_state=='V'):
+                E[i,j] = 3
+            elif(al_state=='D'):
+                E[i,j] = 5
+            elif(al_state=='I'):
+                E[i,j] = 6
+    E = pd.DataFrame(E)
+    model = AgglomerativeClustering(n_clusters=None, affinity='euclidean', linkage='ward',distance_threshold = 25)
+=======
 def one_hot_encode(al_string):
     #print('One hot encoding for alignment string clustering')
     # Modified code in https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/ 
@@ -86,6 +121,7 @@ def run_hierarchical_clustering_with_one_hot_encoding(aligner,DIST_THRESHOLD=25)
     E = pd.DataFrame(E)
 
     model = AgglomerativeClustering(n_clusters=None, affinity='euclidean', linkage='ward',distance_threshold = DIST_THRESHOLD)
+>>>>>>> 90476be5450da6822f1bbfae58e73036d9d713d2
     model.fit(E)
     cluster_ids = model.labels_
     
@@ -97,6 +133,9 @@ def run_hierarchical_clustering_with_one_hot_encoding(aligner,DIST_THRESHOLD=25)
     aligner.DistMat.columns = aligner.gene_list
     aligner.DistMat.index = aligner.gene_list
     aligner.E = E
+<<<<<<< HEAD
+   # return cluster_ids, gene_clusters
+=======
 
 
 # As ordinal data - numerical encoding 
@@ -383,3 +422,4 @@ def compute_overall_alignment(aligner,mat, plot=False, GAP_SCORE = None):
                 # NOTE: This alignment string does not have the same interpretation as of the 5-state gene alignment string we get.
                 # Here we are only interested in the path 
                 return alignment_str, tracked_path#, opt_cost_M, tracker_M
+>>>>>>> 90476be5450da6822f1bbfae58e73036d9d713d2
