@@ -94,6 +94,7 @@ def predict_alignment(adata_ref, adata_query, gene, n_bins=40):
     gene_list = adata_ref.var_names 
     aligner = Main.RefQueryAligner(adata_ref, adata_query, gene_list, n_bins)
     aligner.WEIGHT_BY_CELL_DENSITY = True
+    aligner.WINDOW_SIZE = 0.1
     al_obj = aligner.align_single_pair(gene)
     alignment_viz(aligner, al_obj)
     return(al_obj)
