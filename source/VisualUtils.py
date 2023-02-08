@@ -3,6 +3,9 @@ import seaborn as sb
 import matplotlib.pyplot as plt
 import anndata
 import numpy as np
+from adjustText import adjust_text
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from scipy.stats import zscore
     
 
 class VisualUtils():
@@ -189,17 +192,17 @@ class VisualUtils():
             if(self.write_file):
                 plt.savefig('match_stat_plot_across_all_alignments.pdf',bbox_inches = 'tight')
 
-    def plot_alignment_path_on_given_matrix(mat, paths, cmap='viridis',annot=True):
-        fig,ax = plt.subplots(1,1, figsize=(7,7))
-        sb.heatmap(mat, square=True,  cmap='viridis', ax=ax, cbar=True, annot=annot,fmt='g')  
-        for path in paths: 
-            path_x = [p[0]+0.5 for p in path]
-            path_y = [p[1]+0.5 for p in path]
-            ax.plot(path_y, path_x, color='black', linewidth=6) # path plot
-        plt.xlabel("PAM (Reference)",fontweight='bold')
-        plt.ylabel("LPS (Query)",fontweight='bold')
-        ax.xaxis.tick_top() # x axis on top
-        ax.xaxis.set_label_position('top')
+#    def plot_alignment_path_on_given_matrix(mat, paths, cmap='viridis',annot=True):
+#        fig,ax = plt.subplots(1,1, figsize=(7,7))
+#        sb.heatmap(mat, square=True,  cmap='viridis', ax=ax, cbar=True, annot=annot,fmt='g')  
+#        for path in paths: 
+#            path_x = [p[0]+0.5 for p in path]
+#            path_y = [p[1]+0.5 for p in path]
+#            ax.plot(path_y, path_x, color='black', linewidth=6) # path plot
+#        plt.xlabel("PAM (Reference)",fontweight='bold')
+#        plt.ylabel("LPS (Query)",fontweight='bold')
+#        ax.xaxis.tick_top() # x axis on top
+#        ax.xaxis.set_label_position('top')
         
     def get_matched_time_points(self, alignment_str):
         j = 0
@@ -347,7 +350,124 @@ class VisualUtils():
             
             
             
-            
-            
-            
-            
+        
+def plot_heatmaps(mat_ref,mat_query,pathway_name, IGS, cluster=False):
+    
+    if(cluster):
+        g=sb.clustermap(mat_ref, figsize=(0.4,0.4), col_cluster=False) 
+        gene_order = g.dendrogram_row.reordered_ind
+        df = pd.DataFrame(g.data2d) 
+        df.index = IGS.SETS[pathway_name][gene_order]
+    else:
+        df=mat_ref
+    
+    plt.subplots(1,2,figsize=(8,12))
+    max_val = np.max([np.max(mat_ref),np.max(mat_query)]) 
+    min_val = np.min([np.min(mat_ref),np.min(mat_query)]) 
+    plt.subplot(1,2,1)
+    ax=sb.heatmap(df, vmax=max_val,vmin=min_val, cbar_kws = dict(use_gridspec=False,location="top")) 
+    plt.title('Reference')
+    ax.yaxis.set_label_position("left")
+    for tick in ax.get_yticklabels():
+        tick.set_rotation(360)
+    plt.subplot(1,2,2)
+    if(cluster):
+        mat_query = mat_query.loc[IGS.SETS[pathway_name][gene_order]] 
+    ax = sb.heatmap(mat_query,vmax=max_val,  vmin=min_val,cbar_kws = dict(use_gridspec=False,location="top"), yticklabels=False) 
+    plt.title('Query')
+    plt.show()
+    
+    
+# smoothened/interpolated mean trends + Z normalisation 
+def plot_mean_trend_heatmaps(pathway_name, IGS, aligner, cluster=False):
+    S_mat = []
+    T_mat = []
+    S_zmat = []
+    T_zmat = []
+
+    for gene in IGS.SETS[pathway_name]:
+
+        fS = pd.DataFrame([aligner.results_map[gene].S.mean_trend, np.repeat('Ref', len(aligner.results_map[gene].S.mean_trend))]).transpose()
+        fT = pd.DataFrame([aligner.results_map[gene].T.mean_trend, np.repeat('ATO', len(aligner.results_map[gene].T.mean_trend))]).transpose()
+        f = pd.concat([fS,fT])
+        f[0] = np.asarray(f[0], dtype=np.float64)
+        from scipy.stats import zscore
+        f['z_normalised'] = zscore(f[0])
+        S_mat.append(np.asarray(f[f[1]=='Ref'][0]))
+        T_mat.append(np.asarray(f[f[1]=='ATO'][0]))    
+        S_zmat.append(np.asarray(f[f[1]=='Ref']['z_normalised']))
+        T_zmat.append(np.asarray(f[f[1]=='ATO']['z_normalised']))  
+    S_mat = pd.DataFrame(S_mat)
+    T_mat = pd.DataFrame(T_mat)
+    S_zmat = pd.DataFrame(S_zmat)
+    T_zmat = pd.DataFrame(T_zmat)
+    
+    S_mat.index = IGS.SETS[pathway_name]
+    T_mat.index = IGS.SETS[pathway_name]
+    S_zmat.index = IGS.SETS[pathway_name]
+    T_zmat.index = IGS.SETS[pathway_name]
+    
+    print('Interpolated mean trends')
+    plot_heatmaps(S_mat, T_mat, pathway_name, IGS, cluster=cluster)
+    print('Z-normalised Interpolated mean trends')
+    return plot_heatmaps(S_zmat, T_zmat, pathway_name, IGS, cluster=cluster)
+
+    
+def plotTimeSeries(al_obj, refQueryAlignerObj, plot_cells = False, plot_mean_trend= False):
+        plt.subplots(1,3,figsize=(15,3))
+        plt.subplot(1,3,1)
+        plotTimeSeriesAlignment(al_obj) 
+        plt.subplot(1,3,2)
+        max_val = np.max([np.max(np.asarray(refQueryAlignerObj.ref_mat[al_obj.gene])), np.max(np.asarray(refQueryAlignerObj.query_mat[al_obj.gene]))])
+        min_val = np.min([np.min(np.asarray(refQueryAlignerObj.ref_mat[al_obj.gene])), np.min(np.asarray(refQueryAlignerObj.query_mat[al_obj.gene]))])
+        g = sb.scatterplot(refQueryAlignerObj.query_time, np.asarray(refQueryAlignerObj.query_mat[al_obj.gene]), alpha=0.7, color = 'midnightblue', legend=False,linewidth=0.3, s=20)  
+        plt.title('Query')
+        plt.ylim([min_val-0.5,max_val+0.5])
+        plt.subplot(1,3,3)
+        g = sb.scatterplot(refQueryAlignerObj.ref_time, np.asarray(refQueryAlignerObj.ref_mat[al_obj.gene]), color = 'forestgreen', alpha=0.7, legend=False,linewidth=0.3,s=20 ) 
+        plt.title('Reference')
+        plt.ylim([min_val-0.5,max_val+0.5])
+        
+def plotTimeSeriesAlignment(al_obj):  
+        sb.scatterplot(al_obj.S.X, al_obj.S.Y, color = 'forestgreen' ,alpha=0.05, legend=False)#, label='Ref') 
+        sb.scatterplot(al_obj.T.X, al_obj.T.Y, color = 'midnightblue' ,alpha=0.05, legend=False)#, label ='Query') 
+        al_obj.plot_mean_trends() 
+        plt.title(al_obj.gene)
+        plt.xlabel('pseudotime')
+        plt.ylabel('Gene expression')
+        plt.axis('off')
+        
+        for i in range(al_obj.matched_region_DE_info.shape[0]):
+            S_timebin = int(al_obj.matched_region_DE_info.iloc[i]['ref_bin'])
+            T_timebin = int(al_obj.matched_region_DE_info.iloc[i]['query_bin']) 
+            x_vals = [al_obj.matched_region_DE_info.iloc[i]['ref_pseudotime'],al_obj.matched_region_DE_info.iloc[i]['query_pseudotime']] 
+            y_vals = [al_obj.S.mean_trend[S_timebin ], al_obj.T.mean_trend[T_timebin]] 
+            plt.plot(x_vals, y_vals, color='black', linestyle='dashed', linewidth=0.6)
+    
+    
+def plot_alignmentSim_vs_l2fc(x):
+    plt.subplots(1,1,figsize=(9,8))
+    sb.scatterplot(x['l2fc'],x['sim']*100,s=120, legend=False, hue =x['sim'] ,palette=sb.diverging_palette(0, 255, s=150, as_cmap=True),edgecolor='k',linewidth=0.3)
+    plt.yticks(fontsize=15)
+    plt.xticks(fontsize=15)
+    plt.ylabel('Alignment Similarity %', fontsize=15, fontweight='bold')
+    plt.xlabel('Log2 fold change of mean expression', fontsize = 15, fontweight='bold')
+    plt.grid(False)
+    plt.axhline(50, color='black')
+    plt.axvline(0, color='black', linestyle='dashed')
+    plt.tight_layout()
+    
+    
+def plot_alignment_path_on_given_matrix(mat, paths, cmap='viridis'):
+        fig,ax = plt.subplots(1,1, figsize=(7,7))
+        sb.heatmap(mat, square=True,  cmap='viridis', ax=ax, cbar=True)  
+        for path in paths: 
+            path_x = [p[0]+0.5 for p in path]
+            path_y = [p[1]+0.5 for p in path]
+            ax.plot(path_y, path_x, color='white', linewidth=6)
+        plt.xlabel("Reference",fontweight='bold')
+        plt.ylabel("Query",fontweight='bold')
+        ax.xaxis.tick_top() # x axis on top
+        ax.xaxis.set_label_position('top')
+        
+        

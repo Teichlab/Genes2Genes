@@ -12,6 +12,10 @@ import os,sys,inspect
 import pickle
 from tqdm import tqdm
 from tabulate import tabulate
+from gsea_api.molecular_signatures_db import MolecularSignaturesDatabase
+from adjustText import adjust_text
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from scipy.stats import zscore
 
 def get_ranked_genelist(aligner):
         #print('make ranked gene list')
@@ -125,3 +129,24 @@ def run_GSEA_on_rankedlist(rankedDEgenes):
     plt.xlim([0,max_q])
     
     return pre_res
+
+
+class InterestingGeneSets:
+    
+    def __init__(self):        
+        self.SETS = {}
+        self.dbs = {}
+        self.msigdb = MolecularSignaturesDatabase('../../msigdb', version='7.5.1')
+        self.dbs['kegg'] = self.msigdb.load('c2.cp.kegg', 'symbols')
+        self.dbs['hallmark'] = self.msigdb.load('h.all', 'symbols')
+        self.dbs['gobp'] = self.msigdb.load('c5.go.bp', 'symbols')
+        self.dbs['gocc'] = self.msigdb.load('c5.go.cc', 'symbols')
+        self.dbs['reac'] = self.msigdb.load('c2.cp.reactome', 'symbols')
+        
+    def add_new_set_from_msigdb(self, db_name, dbsetname, avail_genes, usersetname):
+        self.SETS[usersetname] = np.intersect1d(list(self.dbs[db_name].gene_sets_by_name[dbsetname].genes), avail_genes)
+
+    def add_new_set(self, geneset, usersetname, avail_genes):
+        geneset = np.asarray(geneset)
+        self.SETS[usersetname] = geneset[np.where([g in avail_genes for g in geneset])]
+        

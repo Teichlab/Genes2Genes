@@ -23,6 +23,7 @@ def check_alignment_clusters(cluster_ids, alignments, n_cols = 5, figsize= (10,6
             cluster_genes = [] 
             cluster_alignments = np.asarray(alignments)[cluster_ids == unique_cluster_ids[cluster_id]]
             for a in cluster_alignments:
+                    a.fwd_DP.alignment_path.append([0,0])
                     paths.append(a.fwd_DP.alignment_path)
                     #print(a.gene)
                     cluster_genes.append(a.gene);# cluster_genes.append(a.gene)
@@ -213,7 +214,7 @@ def run_hierarchical_clustering_with_binary_encode_alignment_path_hamming(aligne
 
     aligner.cluster_ids = cluster_ids
     aligner.gene_clusters = gene_clusters 
-    aligner.DistMat = pd.DataFrame(euclidean_distances(E, E)) 
+    aligner.DistMat = pd.DataFrame(E)
     aligner.DistMat.columns = aligner.gene_list
     aligner.DistMat.index = aligner.gene_list
     aligner.E = E
