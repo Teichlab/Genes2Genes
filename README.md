@@ -1,7 +1,8 @@
-# Genes2Genes
-### A new algorithm and framework for single-cell trajectory alignment 
+# Genes2Genes (G2G)
+### A new framework for single-cell gene expression trajectory alignment 
 
-Genes2Genes aims to guide downstream comparative analysis of reference and query systems along any axis of progression (e.g. pseudotime) through both gene-level and cell-level alignment. 
+G2G aims to guide downstream comparative analysis of reference and query systems along any axis of progression (e.g. pseudotime), 
+using dynamic programming alignment (that handles both matches and mismatches). 
 
 You can use this framework to perform comparisons such as:
 <ul>
@@ -11,13 +12,13 @@ You can use this framework to perform comparisons such as:
 </ul>   
 
 #### Input to Genes2Genes
-(1) Reference adata (with `adata_ref.X` storing log1p normalised expression), 
-(2) Query adata (with `adata_query.X` storing log1p normalised expression), and
-(3) Pseudotime estimates stored in each adata object under  `adata.obs['time']`.
+(1) Reference anndata (with `adata_ref.X` storing log1p normalised expression), 
+(2) Query anndata (with `adata_query.X` storing log1p normalised expression), and
+(3) Pseudotime estimates stored in each anndata object under  `adata.obs['time']`.
 
-**<span style="color:red">Note: This is the initial and testable version of Genes2Genes (in confidence -- still unpublished and under refinement) so you might run into unforseen errors and bugs. Please do let me know so that I can correct them before releasing the stable version. Thanks!</span>**
+**<span style="color:red">Note: This is the initial and testable version of G2G (IN CONFIDENCE -- Manuscript in Progress)</span>**
 
 ### Tutorial
 
-Please refer to the tutorial notebook which gives steps to analyse an example reference and query dataset: 2 treatment groups of mouse-bone-marrow-derived Dendritic cells from Shalek et al (2014). The respective single-cell datasets along with pseudotime estimates were downloaded from CellAlign (Alpert et al 2018) and packaged into adata objects. 
+Please refer to the Tutorial Notebook which gives an example analysis between a reference and query dataset: 2 treatment groups of mouse-bone-marrow-derived Dendritic cells from Shalek et al (2014). The respective single-cell datasets along with their pseudotime estimates were downloaded from CellAlign (Alpert et al 2018) and packaged into adata objects. 
 
