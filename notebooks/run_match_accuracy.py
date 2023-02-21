@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tabulate import tabulate
 import os,sys,inspect
+import pickle
 # setting the path to source
 # sys.path.insert(0,os.path.dirname(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))) + '/source') 
 sys.path.append('../source') 
@@ -32,16 +33,19 @@ parser.add_argument("mm_type",
 parser.add_argument("mm_size",
                     type=int,
                     help="path to working directory")
+parser.add_argument("--save_aligner",
+                    action='store_true')
 args = parser.parse_args()
 
 mm_type = args.mm_type
 mm_size = args.mm_size
+save_aligner = args.save_aligner
 
 def simulate_alignment2(adata, true_align_string, 
                        frac_query = 0.5,
                        seed=42352,
                        gene = 'Msi1',
-                       n_stds = 1):
+                       n_stds = 3):
     np.random.seed(seed)
     n_bins=len(true_align_string)
     adata.obs['time_bins'] = pd.cut(adata.obs['time'], n_bins).astype('category').cat.codes
@@ -55,29 +59,39 @@ def simulate_alignment2(adata, true_align_string,
 
     adata_query = adata[q_cells].copy()
     adata_ref = adata[~adata.obs_names.isin(q_cells)].copy()
-    
+
     ## Calculate shift for insertion
     X_query = adata_query.X.copy()
     X_gene = X_query[:,adata_query.var_names == gene]
-    ins_shift = n_stds*X_gene.std()
-    
+    # ins_shift = n_stds*X_gene.std()
+
+    ## Find max bin for insertion (using interpolated mean)
+    gene_list = adata_ref.var_names 
+    aligner = Main.RefQueryAligner(adata_ref, adata_query, gene_list, 40)
+    aligner.WEIGHT_BY_CELL_DENSITY = True
+    aligner.WINDOW_SIZE = 0.1
+    al_obj = aligner.align_single_pair(gene)
+    max_bin = np.array(al_obj.S.intpl_means).argmax()
+    X_insert = adata_query[adata_query.obs['time_bins'] == max_bin, gene].X
+    mean_shift = X_insert.mean()  + n_stds * X_insert.std() 
+    std_shift = X_insert.std()
+
     for i,b in enumerate(true_align_string):
         bcells = adata_query.obs_names[adata_query.obs['time_bins'] == i]
         if b == 'D': ## delete cells
             adata_query = adata_query[~adata_query.obs_names.isin(bcells)].copy()
-        if b == 'I': # change values for gene expression            
-            X_query = adata_query.X.copy()
+        if b == 'I': # change values for gene expression  
             X_gene = X_query[adata_query.obs_names.isin(bcells),adata_query.var_names == gene]
-            X_query[adata_query.obs_names.isin(bcells),adata_query.var_names == gene] = X_gene + ins_shift
+            X_ins = np.random.normal(loc=mean_shift, scale=std_shift, size=len(X_gene))
+            X_query[adata_query.obs_names.isin(bcells),adata_query.var_names == gene] = X_ins
             adata_query.X = X_query.copy()
-    
+
     # Algorithm expect time spanning from 0 to 1
-    adata_ref.obs['time'] = normalize(adata_ref.obs['time'].values.reshape(1,-1), norm='max').ravel()
-    adata_query.obs['time'] = normalize(adata_query.obs['time'].values.reshape(1,-1), norm='max').ravel()
-    # adata_query.obs.loc[adata_query.obs['time'].idxmax(), 'time'] = 1.0
+    adata_ref.obs['time'] = TimeSeriesPreprocessor.Utils.minmax_normalise(adata_ref.obs['time'].values)
+    adata_query.obs['time'] = TimeSeriesPreprocessor.Utils.minmax_normalise(adata_query.obs['time'].values)
     return(adata_ref, adata_query)
 
-def make_align_string(mm_type, mm_start = 10, n_bins = 40, mm_size=10):
+def make_align_string(mm_type, mm_start = 10, n_bins = 50, mm_size=10):
     mm_ixs = range(mm_start, mm_start+mm_size)
     true_align_string = ''.join([mm_type if i in mm_ixs else 'M' for i in range(n_bins)])
     return(true_align_string)
@@ -90,7 +104,7 @@ def alignment_viz(aligner, al_obj):
     # al_obj.plotTimeSeriesAlignment()
     print(al_obj.al_visual)
     
-def predict_alignment(adata_ref, adata_query, gene, n_bins=40):
+def predict_alignment(adata_ref, adata_query, gene, n_bins=50):
     gene_list = adata_ref.var_names 
     aligner = Main.RefQueryAligner(adata_ref, adata_query, gene_list, n_bins)
     aligner.WEIGHT_BY_CELL_DENSITY = True
@@ -107,12 +121,14 @@ def get_ref_aling_str(al_obj):
 
 
 def run_match_accuracy(params):
-    adata, gene, align_params = params
+    adata, gene, align_params, save_aligner = params
     match_dict = {'D':'mismatch', 'I':'mismatch', 'M':'match', 'V':'match', 'W':'match'}
     true_align_string = make_align_string(**align_params)
     rdata, qdata = simulate_alignment2(adata, true_align_string, gene=gene)
     al_obj = predict_alignment(rdata, qdata, gene=gene)
-
+    if save_aligner:
+        with open(f'./data/aligner_{gene}.{align_params["mm_type"]}.size{str(align_params["mm_size"])}.pkl', 'wb') as f:
+            pickle.dump(al_obj, f)
     true_ref_align_str = get_ref_aling_str(al_obj)
 
     # get mismatch accuracy
@@ -132,7 +148,7 @@ adata = sc.read_h5ad("./data/match_accuracy_pancreas.h5ad")
 match_outcome = pd.DataFrame()
 pool = multiprocessing.Pool(7)
 outcomes_g = pool.map(run_match_accuracy, 
-                      [(adata, g, {'mm_type':mm_type, 'n_bins':40, 'mm_start':0, 'mm_size':mm_size}) for g in adata.var_names[adata.var['simulation_gene']]])
+                      [(adata, g, {'mm_type':mm_type, 'n_bins':50, 'mm_start':0, 'mm_size':mm_size}, args.save_aligner) for g in adata.var_names[adata.var['simulation_gene']]])
 pool.close()
 outcomes_g = pd.concat(outcomes_g)
 match_outcome = pd.concat([match_outcome, outcomes_g])
