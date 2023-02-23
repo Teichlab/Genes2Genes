@@ -1,4 +1,4 @@
-<p align="left"><img src="G2G_logo.png" width="250" height="85"></p>
+<p align="left"><img src="G2G_logo.png"></p>
 
 # Genes2Genes
 ## A new framework for aligning single-cell trajectories of gene expression 
