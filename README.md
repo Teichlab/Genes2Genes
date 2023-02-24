@@ -18,11 +18,19 @@ by inferring fully-descriptive gene-specific alignments and single-aggregate ali
 
 ### **Installing G2G**
 
+Download the GitHub repository and create a new Conda environment with the Genes2Genes dependencies:
 ```
 git clone https://github.com/Teichlab/Genes2Genes
+cd Genes2Genes
 conda env create -f environment.yaml
+conda activate genes2genes-env
+python -m ipykernel install --user --name genes2genes-env
 ```
-Package to release soon
+This will also register your environment for use with Jupyter. Once you do so, write jupyter notebook, then navigate to the notebooks folder to [get started](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/G2G_Tutorial.ipynb)!
+
+
+
+Package TBA
 
 ### **Input to Genes2Genes**
 (1) Reference anndata (with `adata_ref.X` storing log1p normalised gene expression), 
