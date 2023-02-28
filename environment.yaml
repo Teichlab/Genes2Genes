@@ -3,7 +3,6 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - python=3.10
   - pip
   - ipykernel
   - anndata
@@ -19,3 +18,5 @@ dependencies:
   - scanpy
   - adjusttext
   - ipympl
+  - python=3.8
+  - colorcet
