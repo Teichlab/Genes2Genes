@@ -106,7 +106,7 @@ class Prepocessor:
         return scaled_intpl_gex, self.artificial_time_points
 
 
-    # My trial - interpolation of distributions based on Gaussian kernel (similar to above method but we get a distribution of artificial cells for interpolated time points now)
+    # Interpolation of distributions based on Gaussian kernel (similar to above method but we get a distribution of artificial cells for interpolated time points now)
     #  weighted mean and weighted std based dist interpolation
     # Extending the CellAlign interpolation method based on Gaussian Kernel 
     def interpolate_time_series_distributions(self, gene, N=50, CONST_STD= False,WEIGHT_BY_CELL_DENSITY=False):
