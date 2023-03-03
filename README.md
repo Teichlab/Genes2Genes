@@ -2,8 +2,8 @@
 
 # Genes2Genes
 ## A new framework for aligning single-cell trajectories of gene expression 
-G2G aims to guide downstream comparative analysis of single-cell reference and query systems along any axis of progression (e.g. pseudotime), 
-using a new dynamic programming alignment algorithm (which unifies both matches and mismatches). 
+G2G aims to guide downstream comparative analysis of single-cell reference and query systems along any axis of progression (e.g. pseudotime). 
+It employs a new dynamic programming alignment algorithm which unifies both matches and mismatches. 
 
 You can use this framework to perform comparisons such as:
 <ul>
@@ -12,7 +12,9 @@ You can use this framework to perform comparisons such as:
     <li>Healthy vs. Disease
 </ul>   
 
-by inferring fully-descriptive gene-specific alignments and single-aggregate alignments, allowing to identify and pinpoint dynamic similarities and differences in transcriptomics between a reference and query. 
+by inferring fully-descriptive gene-specific alignments as well as single-aggregate alignments. 
+
+G2G alignments allowing to identify and pinpoint dynamic similarities and differences in transcriptomics between a reference and query. 
 
 ### Manuscript preprint 
 *"Gene-level alignment of single cell trajectories informs the progression of in vitro T cell differentiation"* <br>
@@ -33,12 +35,12 @@ This will also register your environment for use with Jupyter. Once you do so, w
 
 Note: Package TBA
 
-### **Input to Genes2Genes**
+### **Input to G2G**
 (1) Reference anndata (with `adata_ref.X` storing log1p normalised gene expression), 
 (2) Query anndata (with `adata_query.X` storing log1p normalised gene expression), and
 (3) Pseudotime estimates stored in each anndata object under  `adata_ref.obs['time']` and `adata_query.obs['time']`.
 
 ### Tutorial
 
-Please refer to the notebook `G2G_Tutorial.ipynb` which gives an example analysis between a reference and query dataset from literature. 
+Please refer to the notebook [`notebooks/G2G_Tutorial.ipynb`](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/G2G_Tutorial.ipynb) which gives an example analysis between a reference and query dataset from literature. 
 
