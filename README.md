@@ -3,9 +3,9 @@
 # Genes2Genes
 ## A new framework for aligning single-cell trajectories of gene expression 
 G2G aims to guide downstream comparative analysis of single-cell reference and query systems along any axis of progression (e.g. pseudotime). 
-It employs a new dynamic programming alignment algorithm which unifies both matches and mismatches. 
+This is done by employing a new dynamic programming alignment algorithm which unifies both matches and mismatches. 
 
-You can use this framework to perform comparisons such as:
+You can use this framework to perform comparisons across pseudotime such as:
 <ul>
     <li>Organoid vs. Reference tissue
     <li>Control vs. Treatment
@@ -13,8 +13,7 @@ You can use this framework to perform comparisons such as:
 </ul>   
 
 by inferring fully-descriptive gene-specific alignments as well as single-aggregate alignments. 
-
-G2G alignments allowing to identify and pinpoint dynamic similarities and differences in transcriptomics between a reference and query. 
+G2G alignments enable us to identify and pinpoint dynamic similarities and differences in gene expression between a reference and query. 
 
 ### Manuscript preprint 
 *"Gene-level alignment of single cell trajectories informs the progression of in vitro T cell differentiation"* <br>
