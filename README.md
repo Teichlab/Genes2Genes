@@ -13,8 +13,8 @@ We can use the G2G framework to perform comparisons across pseudotime such as:
     <li>Control vs. Treatment
     <li>Healthy vs. Disease
 </ul>  
-by inferring fully-descriptive gene-specific alignments along with single-aggregate alignments. 
-These results enable us to pinpoint dynamic similarities and differences in gene expression between a reference and query, as well as to group genes with similar alignment patterns.  
+by inferring fully-descriptive gene-specific alignments and single-aggregate alignments. 
+These alignment results enable us to pinpoint dynamic similarities and differences in gene expression between a reference and query, as well as to group genes with similar alignment patterns.  
 
 ### Manuscript preprint 
 ***"Gene-level alignment of single cell trajectories informs the progression of in vitro T cell differentiation"*** <br>
