@@ -23,17 +23,11 @@ Available at: https://www.biorxiv.org/content/10.1101/2023.03.08.531713v1
 
 ### **Installing G2G**
 
-Download the GitHub repository and create a new Conda environment with the Genes2Genes dependencies:
+For now, G2G needs to be installed from GitHub:
+```bash
+pip install git+https://github.com/Teichlab/Genes2Genes.git
 ```
-git clone https://github.com/Teichlab/Genes2Genes
-cd Genes2Genes
-conda env create -f environment.yaml
-conda activate genes2genes-env
-python -m ipykernel install --user --name genes2genes-env
-```
-This will also register your environment for use with Jupyter. Once you do so, write jupyter notebook, then navigate to the notebooks folder to [get started](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/G2G_Tutorial.ipynb)!
-
-Note: Package TBA
+The package will be made available on PyPi soon.
 
 ### **Input to G2G**
 (1) Reference anndata object (with `adata_ref.X` storing log1p normalised gene expression), 

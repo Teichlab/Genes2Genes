@@ -2,8 +2,8 @@ import numpy as np
 import seaborn as sb
 import torch
 
-import MyFunctions
-import MVG
+from . import MyFunctions
+from . import MVG
 
 class SummaryTimeSeries:
     
