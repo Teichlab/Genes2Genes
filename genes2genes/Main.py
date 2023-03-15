@@ -21,10 +21,10 @@ from tabulate import tabulate
 import regex 
 import anndata
 
-import OrgAlign as orgalign
-import MyFunctions 
-import TimeSeriesPreprocessor
-import AlignmentDistMan
+from . import OrgAlign as orgalign
+from . import MyFunctions 
+from . import TimeSeriesPreprocessor
+from . import AlignmentDistMan
 
 
 

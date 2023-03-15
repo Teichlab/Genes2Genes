@@ -1,5 +1,5 @@
 import regex as re
-import OrgAlign as orgalign 
+from . import OrgAlign as orgalign 
 import numpy as np 
 from tqdm import tqdm 
 import pandas as pd

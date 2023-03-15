@@ -1,0 +1,32 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "genes2genes"
+authors = [{name = "Dinithi Sumanaweera", email = "ds40@sanger.ac.uk"}]
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = ["License :: OSI Approved :: MIT License"]
+dynamic = ["version", "description"]
+dependencies = [
+    "anndata",
+    "regex",
+    "textdistance",
+    "tabulate",
+    "gsea-api",
+    "gseapy",
+    "gprofiler-official",
+    "seaborn",
+    "levenshtein",
+    "torch",
+    "gpytorch",
+    "scanpy",
+    "adjusttext",
+    "ipympl",
+    "colorcet",
+]
+requires-python = ">=3.8"
+
+[project.urls]
+Home = "https://github.com/Teichlab/Genes2Genes"

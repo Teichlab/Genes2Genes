@@ -1,6 +1,6 @@
 from tqdm.notebook import tqdm
 import numpy as np
-import MyFunctions
+from . import MyFunctions
 import scipy
 import scipy.sparse
 import seaborn as sb
