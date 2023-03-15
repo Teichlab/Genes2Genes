@@ -15,6 +15,7 @@ dependencies = [
     "textdistance",
     "tabulate",
     "gsea-api",
+    "gseapy",
     "gprofiler-official",
     "seaborn",
     "levenshtein",
