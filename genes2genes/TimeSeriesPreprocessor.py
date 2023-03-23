@@ -19,7 +19,7 @@ class SummaryTimeSeries:
         self.intpl_stds = None
         
     def plot_mean_trend(self, color='blue'):
-        sb.lineplot(self.time_points, self.mean_trend, linewidth=3, color=color)
+        sb.lineplot(x=self.time_points, y=self.mean_trend, linewidth=3, color=color)
         
         
     def reverse_time_series(self):

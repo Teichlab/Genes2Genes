@@ -420,17 +420,17 @@ def plotTimeSeries(al_obj, refQueryAlignerObj, plot_cells = False, plot_mean_tre
         plt.subplot(1,3,2)
         max_val = np.max([np.max(np.asarray(refQueryAlignerObj.ref_mat[al_obj.gene])), np.max(np.asarray(refQueryAlignerObj.query_mat[al_obj.gene]))])
         min_val = np.min([np.min(np.asarray(refQueryAlignerObj.ref_mat[al_obj.gene])), np.min(np.asarray(refQueryAlignerObj.query_mat[al_obj.gene]))])
-        g = sb.scatterplot(refQueryAlignerObj.query_time, np.asarray(refQueryAlignerObj.query_mat[al_obj.gene]), alpha=0.7, color = 'midnightblue', legend=False,linewidth=0.3, s=20)  
+        g = sb.scatterplot(x=refQueryAlignerObj.query_time, y=np.asarray(refQueryAlignerObj.query_mat[al_obj.gene]), alpha=0.7, color = 'midnightblue', legend=False,linewidth=0.3, s=20)  
         plt.title('Query')
         plt.ylim([min_val-0.5,max_val+0.5])
         plt.subplot(1,3,3)
-        g = sb.scatterplot(refQueryAlignerObj.ref_time, np.asarray(refQueryAlignerObj.ref_mat[al_obj.gene]), color = 'forestgreen', alpha=0.7, legend=False,linewidth=0.3,s=20 ) 
+        g = sb.scatterplot(x=refQueryAlignerObj.ref_time, y=np.asarray(refQueryAlignerObj.ref_mat[al_obj.gene]), color = 'forestgreen', alpha=0.7, legend=False,linewidth=0.3,s=20 ) 
         plt.title('Reference')
         plt.ylim([min_val-0.5,max_val+0.5])
         
 def plotTimeSeriesAlignment(al_obj):  
-        sb.scatterplot(al_obj.S.X, al_obj.S.Y, color = 'forestgreen' ,alpha=0.05, legend=False)#, label='Ref') 
-        sb.scatterplot(al_obj.T.X, al_obj.T.Y, color = 'midnightblue' ,alpha=0.05, legend=False)#, label ='Query') 
+        sb.scatterplot(x=al_obj.S.X, y=al_obj.S.Y, color = 'forestgreen' ,alpha=0.05, legend=False)#, label='Ref') 
+        sb.scatterplot(x=al_obj.T.X, y=al_obj.T.Y, color = 'midnightblue' ,alpha=0.05, legend=False)#, label ='Query') 
         al_obj.plot_mean_trends() 
         plt.title(al_obj.gene)
         plt.xlabel('pseudotime')
@@ -447,7 +447,7 @@ def plotTimeSeriesAlignment(al_obj):
     
 def plot_alignmentSim_vs_l2fc(x):
     plt.subplots(1,1,figsize=(9,8))
-    sb.scatterplot(x['l2fc'],x['sim']*100,s=120, legend=False, hue =x['sim'] ,palette=sb.diverging_palette(0, 255, s=150, as_cmap=True),edgecolor='k',linewidth=0.3)
+    sb.scatterplot(x=x['l2fc'],y=x['sim']*100,s=120, legend=False, hue =x['sim'] ,palette=sb.diverging_palette(0, 255, s=150, as_cmap=True),edgecolor='k',linewidth=0.3)
     plt.yticks(fontsize=15)
     plt.xticks(fontsize=15)
     plt.ylabel('Alignment Similarity %', fontsize=15, fontweight='bold')
