@@ -178,7 +178,7 @@ class AlignmentDist:
         
         for a in self.results:
             gene_strs.append(a.alignment_str)
-            genes.append(a.gene_pair)
+            genes.append(a.gene)
             w_index = a.alignment_str.find('W')
             m_index = a.alignment_str.find('M')
             v_index = a.alignment_str.find('V')

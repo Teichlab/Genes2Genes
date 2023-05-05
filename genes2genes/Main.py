@@ -98,8 +98,8 @@ class AligmentObj:
         sb.scatterplot(x=al_obj.S.X, y=al_obj.S.Y, color = 'forestgreen' ,alpha=0.05)#, label='Ref') 
         sb.scatterplot(x=al_obj.T.X, y=al_obj.T.Y, color = 'midnightblue' ,alpha=0.05)#, label ='Query')
         if(plot_cells):
-            sb.scatterplot(x=aligner.ref_time, y=np.asarray(aligner.ref_mat[al_obj.gene[0]]), color = 'forestgreen' ) 
-            sb.scatterplot(x=aligner.ref_time, y=np.asarray(aligner.ref_mat[al_obj.gene[1]]), color = 'midnightblue' )
+            sb.scatterplot(x=aligner.ref_time, y=np.asarray(aligner.ref_mat[al_obj.gene_pair[0]]), color = 'forestgreen' ) 
+            sb.scatterplot(x=aligner.ref_time, y=np.asarray(aligner.ref_mat[al_obj.gene_pair[1]]), color = 'midnightblue' )
         plt.title(al_obj.gene)
         plt.xlabel('pseudotime')
         plt.ylabel('log1p expression')
