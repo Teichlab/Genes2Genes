@@ -1,9 +1,12 @@
 import numpy as np
 import seaborn as sb
 import torch
+from optbinning import ContinuousOptimalBinning
 
-from . import MyFunctions
-from . import MVG
+#from . import MyFunctions
+#from . import MVG
+import MyFunctions
+import MVG
 
 class SummaryTimeSeries:
     
@@ -43,9 +46,11 @@ class Prepocessor:
             pseudotime_series = args[1]
             m = args[2]
             WINDOW_SIZE = args[3]
+            optimal_binning = args[4]
+            opt_binning = args[5]
             self.GEX_MAT = GEX_MAT
             self.pseudotime_series = pseudotime_series
-            self.compute_cell_density_trend(WINDOW_SIZE, m=m) 
+            self.compute_cell_density_trend(WINDOW_SIZE, m=m, optimal_binning=optimal_binning, opt_binning = opt_binning) 
         else:
             self.GEX_MAT = None
             self.pseudotime_series = None
@@ -140,7 +145,7 @@ class Prepocessor:
                 dist_std = weighted_std
                 #print(dist_std, ' -- ', self.cell_densities[intpl_i])
             if(dist_std==0 or np.isnan(dist_std)): # case of single data point or no data points
-                dist_std = 0.1 #np.mean(summary_series_obj.std_trend)
+                dist_std = 0.01#0.1 #np.mean(summary_series_obj.std_trend)
             D,temp1,temp2 = MyFunctions.generate_random_dataset(N, dist_mean, dist_std)
             
             intpl_gex.append(D)
@@ -166,21 +171,45 @@ class Prepocessor:
         return obj
 
     
-    def compute_cell_density_trend(self, WINDOW_SIZE = 0.1, m=50): # TODO LATEST TEST 07/01/2023 earlier used 0.15 for early Jan runs
+    def get_optimal_binning(self, time_var_arr, n_points):
+        x = time_var_arr
+        optb = ContinuousOptimalBinning(name='pseudotime', dtype="numerical", max_n_bins=n_points)
+        # this pacakge uses mixed integer programming based optimization to determine an optimal binning
+        optb.fit(x, x)
+        #sb.kdeplot(x, fill=True)
+        #for s in optb.splits: 
+        #    plt.axvline(x=s)
+        #print(len(optb.splits))
+        return optb.splits   
+
+    
+    def compute_cell_density_trend(self, WINDOW_SIZE = 0.1, m=50, optimal_binning = False, opt_binning = []): # TODO LATEST TEST 07/01/2023 earlier used 0.15 for early Jan runs
         
         #print('Window size = ', WINDOW_SIZE)
         artificial_time_points = []
-        for j in range(1,m):
-            artificial_time_points.append((j-1)/(m-1))    
-        artificial_time_points.append(1.0)
         
-        artificial_time_points = np.asarray(artificial_time_points)
-        artificial_time_points = artificial_time_points[artificial_time_points >= np.min(self.pseudotime_series)] 
-        artificial_time_points = artificial_time_points[artificial_time_points <= np.max(self.pseudotime_series)] 
-        #print( artificial_time_points , '<---- ')
-        if(artificial_time_points[0]!=0.0):
-            artificial_time_points = np.asarray([0] + list(artificial_time_points)) 
-        
+        if(optimal_binning):
+            #print('OPTIMAL BINNING SETTING',optimal_binning)
+            #print('=== Running interpolation based on artificial timepoints in the optimal binning')
+            # optimal binning based NEW ==========
+            #artificial_time_points = self.get_optimal_binning(np.asarray(self.pseudotime_series),m)
+            artificial_time_points = opt_binning
+            # optimal binning based NEW ==========
+            #print('# of timepoints = ', len(artificial_time_points))
+            #artificial_time_points = np.asarray([0] + list(artificial_time_points)+[1])
+            # optimal binning based NEW ==========       
+        else:
+            for j in range(1,m):
+                artificial_time_points.append((j-1)/(m-1))    
+            artificial_time_points.append(1.0)
+
+            artificial_time_points = np.asarray(artificial_time_points)
+            artificial_time_points = artificial_time_points[artificial_time_points >= np.min(self.pseudotime_series)] 
+            artificial_time_points = artificial_time_points[artificial_time_points <= np.max(self.pseudotime_series)] 
+            #print( artificial_time_points , '<---- ')
+            if(artificial_time_points[0]!=0.0):
+                artificial_time_points = np.asarray([0] + list(artificial_time_points))     
+
         cell_densities = [] 
         cell_weights = {} 
         

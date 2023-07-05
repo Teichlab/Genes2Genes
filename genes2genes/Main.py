@@ -259,8 +259,15 @@ class RefQueryAligner:
        # self.query_processor =  TimeSeriesPreprocessor.Prepocessor(self.query_mat, self.query_time, n_q_points)
         
     def run_interpolation(self, gene):
-        ref_processor = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, self.n_artificial_time_points, self.WINDOW_SIZE)
-        query_processor =  TimeSeriesPreprocessor.Prepocessor(self.query_mat, self.query_time, self.n_q_points, self.WINDOW_SIZE)
+        #print('***** ', self.n_artificial_time_points)
+        
+        if not (hasattr(self, 'opt_binning_S') and hasattr(self, 'opt_binning_T')):
+            self.opt_binning_S = []
+            self.opt_binning_T = []
+            self.optimal_binning = False
+        
+        ref_processor = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, self.n_artificial_time_points, self.WINDOW_SIZE, self.optimal_binning,self.opt_binning_S)
+        query_processor =  TimeSeriesPreprocessor.Prepocessor(self.query_mat, self.query_time, self.n_q_points, self.WINDOW_SIZE, self.optimal_binning, self.opt_binning_T)
         
         S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
         T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
@@ -1185,7 +1192,7 @@ class GeneAligner:
 
 
         def run_interpolation(self, gene):
-            ref_processor = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, 15, 0.1)
+            ref_processor = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, 15, 0.1, False)
             return ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = True)
 
         def align_single_pair_within_system(self, KEY, state_params = [0.99,0.5,0.4], zero_transition_costs=False, prohibit_case = False): 

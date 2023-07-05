@@ -6,21 +6,56 @@ import numpy as np
 from adjustText import adjust_text
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from scipy.stats import zscore
+import colorcet as cc
+from optbinning import ContinuousOptimalBinning
     
+
+vega_20 = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c', '#98df8a', '#d62728',
+            '#ff9896', '#9467bd', '#c5b0d5', '#8c564b', '#c49c94', '#e377c2', '#f7b6d2',
+            '#7f7f7f', '#c7c7c7', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5',]
 
 class VisualUtils():
     
-    def __init__(self, adata_ref, adata_query, cell_type_colname, S_len, T_len, titleS = 'Reference', titleT = 'Query', mode='comp', write_file=False):
+    def __init__(self, adata_ref, adata_query, cell_type_colname, S_len, T_len, titleS = 'Reference', titleT = 'Query', mode='comp', write_file=False, optimal_binning=True):
         self.write_file = write_file 
         if(mode=='comp'):
             self.titleS = titleS
             self.titleT = titleT
-            self.pseudotime2bin_celltypes(adata_ref,S_len)
-            self.pseudotime2bin_celltypes(adata_query,T_len)
+            
+            n_points = S_len
+            while(True):
+                # later to replace with a better optimal binning that gives exact number we request
+                print('# trying max n points for optimal binning =', n_points)
+                adata_ref, bm1 = self.pseudotime2bin_celltypes(adata_ref, n_points, optimal_binning=optimal_binning)
+                adata_query, bm2 = self.pseudotime2bin_celltypes(adata_query, n_points, optimal_binning=optimal_binning)
+                
+                if(not (len(bm1) == len(bm2))):
+                    n_points=n_points-1               
+                    if(n_points<=5):
+                        print('Consider equal length binning')
+                        break
+                else:
+                    print('====================================================')
+                    print('Optimal equal number of bins for R and Q = ',len(bm1))
+                    break
+                  
+            plt.subplots(1,2, figsize=(10,3))
+            x = list(adata_ref.obs.time)
+            plt.subplot(1,2,1)
+            sb.kdeplot(list(adata_ref.obs.time), color='ForestGreen' , fill=True)
+            for s in bm1: 
+                plt.axvline(x=s, color='ForestGreen')
+            x = list(adata_query.obs.time)
+            plt.subplot(1,2,2)
+            sb.kdeplot(list(adata_query.obs.time),color='midnightblue', fill=True)
+            for s in bm2: 
+                plt.axvline(x=s, color='midnightblue')
+                
             meta1 = self.plot_cell_type_proportions(adata_ref, cell_type_colname, 'bin_ids',None,'tab20')
             meta2 = self.plot_cell_type_proportions(adata_query, cell_type_colname, 'bin_ids',None,'tab20')
-            meta1 = self.simple_interpolate(meta1,S_len)
-            meta2 = self.simple_interpolate(meta2,T_len)
+            if(not optimal_binning):
+                meta1 = self.simple_interpolate(meta1,S_len)
+                meta2 = self.simple_interpolate(meta2,T_len)
           #  meta1.loc[1] = meta1.loc[0] + meta1.loc[1]
           #  meta2.loc[1] = meta2.loc[0] + meta2.loc[1]
           #  meta1.loc[0] = np.repeat(0.0,len(np.unique(adata_ref.obs[cell_type_colname])) )
@@ -36,29 +71,51 @@ class VisualUtils():
             
             self.metaS = meta1
             self.metaT = meta2
-        
+            
+            self.optimal_bining_S = bm1
+            self.optimal_bining_T = bm2
+         
+
+    def get_optimal_binning(self, time_var_arr, n_points):
+        x = time_var_arr
+        optb = ContinuousOptimalBinning(name='pseudotime', dtype="numerical", max_n_bins=n_points)
+        # this pacakge uses mixed integer programming based optimization to determine an optimal binning
+        optb.fit(x, x)
+        #sb.kdeplot(x, fill=True)
+        #for s in optb.splits: 
+        #    plt.axvline(x=s)
+        #print(len(optb.splits))
+        return optb.splits
+
+
     # annotates cells with their respective bins based on interpolated pseudotime points
-    def pseudotime2bin_celltypes(self, adata, n_points):
+    def pseudotime2bin_celltypes(self, adata, n_points, optimal_binning = True):
 
-        adata.obs['bin_ids'] = np.repeat(0,adata.shape[0])
-        bin_margins =  np.linspace(0,1,n_points+1)
-        bin_ids = []
-
-        for i in range(len(bin_margins)-1):
-            #if(i==len(bin_margins)-1):
-            #    break
-            #print(bin_margins[i],i)
-            if(i<len(bin_margins)-2):
-                logic =  np.logical_and(adata.obs.time < bin_margins[i+1], adata.obs.time >= bin_margins[i])
+            adata.obs['bin_ids'] = np.repeat(-1,adata.shape[0])
+            if(optimal_binning):
+                bin_margins = self.get_optimal_binning(np.asarray(adata.obs.time) , n_points)
             else:
-                logic =  np.logical_and(adata.obs.time <= bin_margins[i+1], adata.obs.time >= bin_margins[i])
-            bin_cells = adata[logic] 
-            #print(bin_cells.shape)
-            adata.obs['bin_ids'][logic] = i 
+                bin_margins =  np.linspace(0,1,n_points+1)
+            #print('computed the margins for ' + str(len(bin_margins)) +  ' bins')
+            #print(bin_margins)
+            bin_ids = []
+            k = 0 
+            for i in range(len(bin_margins)):
+                
+                if(i==0):
+                    logic = np.logical_and(adata.obs.time >= 0, adata.obs.time < bin_margins[i+1])
+                    #print('i==0', adata[logic].shape[0])
+                elif(i==len(bin_margins)-1):
+                    logic =  np.logical_and(adata.obs.time >= bin_margins[i], adata.obs.time <= 1.0)
+                else:
+                    logic =  np.logical_and(adata.obs.time >= bin_margins[i], adata.obs.time < bin_margins[i+1])
+                adata.obs['bin_ids'][logic] = i 
+            return adata, bin_margins
 
     # for plotting or getting celltype freq counts per bin
     def plot_cell_type_proportions(self, adata, cell_type_colname, covariate_colname, sorter, color_scheme_name="Spectral", plot=False):
         meta = pd.DataFrame(np.vstack((adata.obs[cell_type_colname],adata.obs[covariate_colname])).transpose(),columns=[cell_type_colname,covariate_colname])
+        
         meta['COUNTER'] = 1
         meta = meta.groupby([covariate_colname,cell_type_colname])['COUNTER'].sum().unstack()
         meta = meta.fillna(0)
@@ -69,7 +126,8 @@ class VisualUtils():
             #p.legend(labels = ['not infected','infected'], loc='center left', bbox_to_anchor=(1.25, 0.5), ncol=1)
             p.legend(loc='center left', bbox_to_anchor=(1.25, 0.5), ncol=1)
         return meta
-
+    
+    
     def simple_interpolate(self,meta, n_points):
         for i in range(n_points):
             #print(k)
@@ -82,6 +140,84 @@ class VisualUtils():
                 meta = meta.append(_temp)
         meta = meta.sort_index()
         return meta
+    
+    
+    def get_celltype_composition_across_time(adata_ref, adata_query, n_points, ANNOTATION_COLNAME, optimal_binning=True
+                                        , order_S_legend=None, order_T_legend=None):
+        
+        a = sb.color_palette(cc.glasbey_hv, n_colors=3)
+        vega_20 = [
+            '#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c', '#98df8a', '#d62728',
+            '#ff9896', '#9467bd', '#c5b0d5', '#8c564b', '#c49c94', '#e377c2', '#f7b6d2',
+            '#7f7f7f', '#c7c7c7', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5',
+        ]
+        
+        vs = VisualUtils(adata_ref, adata_query, cell_type_colname = ANNOTATION_COLNAME, 
+                        S_len=n_points, T_len=n_points, titleS='Reference', titleT='Query',
+                        write_file=False, optimal_binning=optimal_binning)
+        
+        #ax = vs.metaS.apply(lambda x: x*100/sum(x), axis=1).plot(kind='bar',stacked=True,color=vega_20, grid = False, legend=True, width=0.7,align='edge',figsize=(10,3))
+        ax = vs.metaS.apply(lambda x: x, axis=1).plot(kind='bar',stacked=True,color=vega_20, grid = False, legend=True, width=0.7,align='edge',figsize=(10,3))
+        ax.legend(bbox_to_anchor=(1.1, 1.44))
+        if(order_S_legend is not None):
+            handles, labels = ax.get_legend_handles_labels()
+            ax.legend(handles=[handles[idx] for idx in order_S_legend],labels=[labels[idx] for idx in order_S_legend],bbox_to_anchor=(1.0, 1.0))
+        
+        #ax = vs.metaT.apply(lambda x: x*100/sum(x), axis=1).plot(kind='bar',stacked=True,color=vega_20, grid = False, legend=True, width=0.7,align='edge',figsize=(10,3))
+        ax = vs.metaT.apply(lambda x: x, axis=1).plot(kind='bar',stacked=True,color=vega_20, grid = False, legend=True, width=0.7,align='edge',figsize=(10,3))
+        ax.legend(bbox_to_anchor=(1.1, 1.05))
+        if(order_T_legend is not None):
+            handles, labels = ax.get_legend_handles_labels()
+            ax.legend(handles=[handles[idx] for idx in order_T_legend],labels=[labels[idx] for idx in order_T_legend],bbox_to_anchor=(1.0, 1.0))
+        vs.metaS.apply(lambda x: x*100/sum(x), axis=1).plot(kind='bar',stacked=True,color=vega_20, grid = False, legend=False, width=0.7,align='edge',figsize=(10,1))
+        plt.axis('off')
+        vs.metaT.apply(lambda x: x*100/sum(x), axis=1).plot(kind='bar',stacked=True,color=vega_20, grid = False, legend=False, width=0.7,align='edge',figsize=(10,1))
+        plt.axis('off')
+
+        return vs 
+    
+    
+    def visualize_gene_alignment(self, al_obj):
+
+        fig = plt.figure(figsize=(4,3))
+        heights = [1, 3, 1] 
+        gs = plt.GridSpec(3, 1, height_ratios=heights)
+        ax1 = fig.add_subplot(gs[0, 0])
+        ax2 = fig.add_subplot(gs[1, 0],sharex=ax1)
+        ax3 = fig.add_subplot(gs[2, 0],sharex=ax1)
+
+        #plt.subplots(3,1, gridspec_kw={'height_ratios': [1,10]})
+        plt.subplot(3,1,1)
+        self.metaS.apply(lambda x: x*100/sum(x), axis=1).plot(kind='bar',stacked=True,color=vega_20, grid = False, legend=False, width=0.7, ax=ax1)
+        self.metaT.apply(lambda x: x*100/sum(x), axis=1).plot(kind='bar',stacked=True,color=vega_20, grid = False, legend=False, width=0.7,ax=ax3)
+        plt.subplot(3,1,2)
+        for i in range(al_obj.matched_region_DE_info.shape[0]):
+                    S_timebin = int(al_obj.matched_region_DE_info.iloc[i]['ref_bin'])
+                    T_timebin = int(al_obj.matched_region_DE_info.iloc[i]['query_bin'])
+                    #print(S_timebin, T_timebin)
+                    x_vals = [al_obj.matched_region_DE_info.iloc[i]['query_pseudotime'],al_obj.matched_region_DE_info.iloc[i]['ref_pseudotime']]
+                    x_vals = [T_timebin+1, S_timebin+1]
+                    y_vals = [0,1]
+                    plt.plot(x_vals, y_vals, marker='.', color='black', linewidth=0.5)
+        #ax2.set_xlim([0,14])
+
+        def set_grid_off(ax):
+            ax.spines['top'].set_visible(False)
+            ax.spines['bottom'].set_visible(False)
+            ax.spines['left'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.figure.tight_layout()
+            ax.grid(False)
+
+        set_grid_off(ax1); set_grid_off(ax2); set_grid_off(ax3); 
+        ax1.set_ylabel('Reference')
+        ax3.set_ylabel('Query')
+        fig.text(0.5, -0.05, 'Pseudotime bins with cell type composition', ha='center')
+        ax1.set_title('Alignment w.r.t cell type compositions')
+
+    
     
     def plot_comprehensive_alignment_landscape_plot(self, aligner, gene = None, order_S_legend=None, order_T_legend=None, paths_to_display=None, cmap='viridis'):
 

@@ -12,9 +12,12 @@ from scipy.spatial import distance
 from scipy.special import softmax
 from scipy.special import kl_div
 
-from . import MyFunctions
-from . import TimeSeriesPreprocessor
-from . import MVG
+#from . import MyFunctions
+#from . import TimeSeriesPreprocessor
+#from . import MVG
+import MyFunctions
+import TimeSeriesPreprocessor
+import MVG
 
 torch.set_default_dtype(torch.float64)
 
