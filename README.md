@@ -38,5 +38,6 @@ The package will be made available on PyPi soon.
 
 Please refer to the notebook [`notebooks/G2G_Tutorial.ipynb`](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/G2G_Tutorial.ipynb) which gives an example analysis between a reference and query dataset from literature. 
 
+### Funding Acknowledgement
 
-
+This work is supported by the European Union’s Horizon 2020 research and innovation programme under the Marie Skłodowska-Curie grant agreement Number: 101026506, Wellcome Trust (WT206194), the ERC Consolidator Grant (646794), and the Wellcome Sanger Institute’s Translation Committee Fund.
