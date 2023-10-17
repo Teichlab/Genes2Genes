@@ -25,6 +25,20 @@ dependencies = [
     "adjusttext",
     "ipympl",
     "colorcet",
+    "optbinning",
+    "scipy",
+    "tqdm",
+    "sklearn",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "seaborn",
+    "leven",
+    "multiprocessing",
+    "copy",
+    "warnings",
+    "pickle",
+    "mpl_toolkits",
 ]
 requires-python = ">=3.8"
 

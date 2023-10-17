@@ -10,9 +10,11 @@ dependencies:
   - textdistance
   - tabulate
   - gseapy
+  - gsea-api
   - gprofiler-official
   - seaborn
   - levenshtein
+  - torch
   - pytorch
   - gpytorch
   - scanpy
@@ -20,3 +22,15 @@ dependencies:
   - ipympl
   - python=3.8
   - colorcet
+  - optbinning
+  - scipy
+  - tqdm
+  - sklearn
+  - matplotlib
+  - pandas
+  - leven
+  - multiprocessing
+  - copy
+  - warnings
+  - pickle
+  - mpl_toolkits
