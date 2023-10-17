@@ -25,8 +25,8 @@ from . import OrgAlign as orgalign
 from . import MyFunctions 
 from . import TimeSeriesPreprocessor
 from . import AlignmentDistMan
-
-
+from . import VisualUtils
+from . import ClusterUtils
 
 class AligmentObj:
     
@@ -93,7 +93,20 @@ class AligmentObj:
             x_vals = [self.matched_region_DE_info.iloc[i]['ref_pseudotime'],self.matched_region_DE_info.iloc[i]['query_pseudotime']] 
             y_vals = [self.S.mean_trend[S_timebin ], self.T.mean_trend[T_timebin]] 
             plt.plot(x_vals, y_vals, color='black', linestyle='dashed', linewidth=0.6)
-
+            
+    def plotTimeSeries_for_gene_pair(al_obj, aligner, plot_cells = False, plot_mean_trend= False):
+        sb.scatterplot(x=al_obj.S.X, y=al_obj.S.Y, color = 'forestgreen' ,alpha=0.05)#, label='Ref') 
+        sb.scatterplot(x=al_obj.T.X, y=al_obj.T.Y, color = 'midnightblue' ,alpha=0.05)#, label ='Query')
+        if(plot_cells):
+            sb.scatterplot(x=aligner.ref_time, y=np.asarray(aligner.ref_mat[al_obj.gene_pair[0]]), color = 'forestgreen' ) 
+            sb.scatterplot(x=aligner.ref_time, y=np.asarray(aligner.ref_mat[al_obj.gene_pair[1]]), color = 'midnightblue' )
+        plt.title(al_obj.gene)
+        plt.xlabel('pseudotime')
+        plt.ylabel('log1p expression')
+        
+        if(plot_mean_trend):
+            self.plot_mean_trends() 
+        
         
     def get_ref_timeseries_obj(self):
         return self.fwd_DP.S
@@ -183,8 +196,8 @@ class AligmentObj:
         
     def get_opt_alignment_cost(self):
         return self.fwd_DP.opt_cost
-    
-            
+
+
 class RefQueryAligner:
     
     def __init__(self, *args):
@@ -245,12 +258,256 @@ class RefQueryAligner:
        # self.ref_processor = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, 50)
        # self.query_processor =  TimeSeriesPreprocessor.Prepocessor(self.query_mat, self.query_time, n_q_points)
         
-    def run_interpolation(self, gene):
-        ref_processor = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, self.n_artificial_time_points, self.WINDOW_SIZE)
-        query_processor =  TimeSeriesPreprocessor.Prepocessor(self.query_mat, self.query_time, self.n_q_points, self.WINDOW_SIZE)
+    
+
+    
+    
+    
+    
+    def extract_significant_regions_only(self, regions):
+        if(len(regions)==0):
+            return []
+        adjacent_region_start = regions[0][0]
+        filtered_regions = np.asarray([], dtype=np.float64)
+        adjacent_region_indices = np.asarray([], dtype=np.float64)
+        filtered_region_indices = np.asarray([], dtype=np.float64)
+        for k in range(len(regions)):
+            if(k!=len(regions)-1):
+                if(regions[k][1] != regions[k+1][0]):
+                    ended_adjacent_region_len = regions[k][1]- adjacent_region_start
+                    #print(ended_adjacent_region_len)
+                    if(ended_adjacent_region_len>0.2):
+                        adjacent_region_indices = np.append(adjacent_region_indices,regions[k][0])
+                        adjacent_region_indices = np.append(adjacent_region_indices, regions[k][1])
+                        filtered_regions=np.append(filtered_regions,[adjacent_region_start,regions[k][1] ])
+                        filtered_region_indices = np.append(filtered_region_indices,adjacent_region_indices)
+                    adjacent_region_start = regions[k+1][0]
+                    adjacent_region_indices = []
+                else:
+                    adjacent_region_indices=np.append(adjacent_region_indices,regions[k][0])
+                    continue
+            else:
+                #print(regions[k][1]- adjacent_region_start)
+                if(len(adjacent_region_indices)>0): # check if there is a continuing adjacent region
+                    ended_adjacent_region_len = regions[k][1]- adjacent_region_start
+                    #print(ended_adjacent_region_len)
+                    if(ended_adjacent_region_len>0.2):
+                        adjacent_region_indices = np.append(adjacent_region_indices,regions[k][0])
+                        adjacent_region_indices=np.append(adjacent_region_indices,regions[k][1])
+                        filtered_regions=np.append(filtered_regions,[adjacent_region_start,regions[k][1] ])
+                        filtered_region_indices = np.append(filtered_region_indices, adjacent_region_indices)
+                        
+        return list(filtered_region_indices)
+    
+    def check_inconsistent_zero_region(self, mat, time_arr, g):
         
-        S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
-        T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+        regions = []
+        window_range = np.linspace(0,1, self.n_artificial_time_points)
+        for i in range(1,len(window_range)):
+            logic = np.logical_and(time_arr>=window_range[i-1], time_arr<window_range[i]) 
+            n_pos = np.count_nonzero(np.asarray(mat[g][logic]))
+            if(n_pos<=3): #almost 0 expression 
+                regions.append([window_range[i-1], window_range[i]])
+        regions = self.extract_significant_regions_only(regions)
+        return regions
+    
+        
+    def run_interpolation(self, gene):
+        #print('***** ', self.n_artificial_time_points)
+        
+        if not (hasattr(self, 'opt_binning_S') and hasattr(self, 'opt_binning_T')):
+            self.opt_binning_S = []
+            self.opt_binning_T = []
+            self.optimal_binning = False
+        
+        ref_processor = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, self.n_artificial_time_points, self.WINDOW_SIZE, self.optimal_binning,self.opt_binning_S)
+        query_processor =  TimeSeriesPreprocessor.Prepocessor(self.query_mat, self.query_time, self.n_q_points, self.WINDOW_SIZE, self.optimal_binning, self.opt_binning_T)
+        
+        
+        # Run interpolation 
+        #S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+        #T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+        
+        gex_r = np.asarray(self.ref_mat[gene] )
+        gex_q = np.asarray(self.query_mat[gene] )
+        
+        
+        
+        
+        if(False):
+            # ================================================================================================================================
+            if((not gex_r.any()) and (not gex_q.any()) ):# both are 0 expressed
+                #print('both', g)    # complete match     
+                S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+                T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+            elif( (not gex_r.any()) or (np.count_nonzero(gex_r)<=50) ):# only ref is 0 expressed or only small number of cells <=50
+                #print('ref 0 expressed')
+                # get query mean trend and std trend estimated 
+                T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                                             ESTIMATE=True, user_given_std=[])
+                # assigning query std trend to ref
+                S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                                            ESTIMATE = False, user_given_std = T.intpl_stds)
+            elif( (not gex_q.any()) or (np.count_nonzero(gex_q)<=50)  ): # only query is 0 expressed or only small number of cells <=50
+                #print('query 0 expressed')
+                # get ref mean trend and std trend estimated 
+                S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                                               ESTIMATE=True, user_given_std=[])
+                # assigning ref std trend to query
+                T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                                            ESTIMATE = False, user_given_std = S.intpl_stds)
+            else: # both are expressed
+                #print('both expressed')
+                S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+                T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+                # get both ref and query mean trend and std trend estimated 
+            # ================================================================================================================================
+            
+        else:
+            
+            USER_GIVEN_STD = np.repeat(-1.0, self.n_artificial_time_points )
+            
+            if(np.count_nonzero(gex_r)<=3 and np.count_nonzero(gex_q)<=3): # if both are almost 0 (less than 3 counts overall)
+               # S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+               # T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+                # use a very low constant std for both cases 
+                S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                                                    ESTIMATE = False, user_given_std = np.repeat(0.01, self.n_artificial_time_points))
+                T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                                                ESTIMATE = False, user_given_std = np.repeat(0.01, self.n_artificial_time_points))
+            elif(np.count_nonzero(gex_r)<=3): # if only ref is almost 0 expressed
+                
+                T_temp = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY, user_given_std= USER_GIVEN_STD)
+                regions_T = self.check_inconsistent_zero_region(self.query_mat, self.query_time, gene)
+                common_std = min(T_temp.intpl_stds)/10
+                std_S = np.repeat(common_std, self.n_artificial_time_points)
+                
+                S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                                                    ESTIMATE = False, user_given_std = std_S)
+                if(len(regions_T)!=0):
+                    user_given_std_arr_T = np.repeat(-1.0, self.n_artificial_time_points )
+                    for subregion_t in np.unique(np.asarray(regions_T).flatten() ):
+                        l = np.where(query_processor.artificial_time_points==  subregion_t)
+                        user_given_std_arr_T[l[0][0]] = common_std 
+                    T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                                          ESTIMATE = False, user_given_std = user_given_std_arr_T)
+                else: 
+                    T= T_temp
+                
+        
+                # get query mean trend and std trend estimated
+             #   T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                         #                    ESTIMATE=True, user_given_std=USER_GIVEN_STD) 
+                # check if query has a sub region almost 0 expressed
+            #    inconsistent_traj_Q_regions = self.check_inconsistent_zero_region(self.query_mat, self.query_time, gene)
+            #    if(len(inconsistent_traj_Q_regions)==0): 
+            #        std_T = np.repeat((np.min(T.intpl_stds))/10, self.n_artificial_time_points) # if there is no such sub region, always use 10% of query's min std for ref std
+                    
+            #    else:
+                    #std_T = T.intpl_stds  # if there is such sub region, use the min std of query for ref std
+            #        std_T = np.repeat((np.min(T.intpl_stds)), self.n_artificial_time_points) 
+            #    S = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                  #                                  ESTIMATE = False, user_given_std = std_T)
+                                                   
+            elif(np.count_nonzero(gex_q)<=3): # if only query is almost 0 expressed
+                
+                
+                S_temp = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY, user_given_std= USER_GIVEN_STD)
+                regions_S = self.check_inconsistent_zero_region(self.ref_mat, self.ref_time, gene)
+                common_std = min(S_temp.intpl_stds)/10
+                std_T = np.repeat(common_std, self.n_artificial_time_points)
+                
+                T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                                                    ESTIMATE = False, user_given_std = std_T)
+                if(len(regions_S)!=0):
+                    user_given_std_arr_S = np.repeat(-1.0, self.n_artificial_time_points )
+                    for subregion_t in np.unique(np.asarray(regions_S).flatten() ):
+                        l = np.where(ref_processor.artificial_time_points ==  subregion_t)
+                        user_given_std_arr_S[l[0][0]] = common_std 
+                    S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                                          ESTIMATE = False, user_given_std = user_given_std_arr_S)
+                else: 
+                    S= S_temp
+                
+                
+                # get ref mean trend and std trend estimated 
+               # S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                         #                                          ESTIMATE=True, user_given_std=USER_GIVEN_STD )
+                
+                # check if ref has a sub region almost 0 expressed
+               # inconsistent_traj_R_regions = self.check_inconsistent_zero_region(self.ref_mat, self.ref_time, gene)
+               # if(len(inconsistent_traj_R_regions)==0):
+               #     std_S = np.repeat((np.min(S.intpl_stds))/10, self.n_artificial_time_points) #  if there is no such sub region, always use 10% of ref's min std for query std
+              #  else:
+               #     std_S = np.repeat((np.min(S.intpl_stds)), self.n_artificial_time_points) 
+                
+               # T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,                                                     
+                                                    #                            ESTIMATE = False, user_given_std = std_S)
+            else: 
+
+                S_temp = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY, user_given_std= USER_GIVEN_STD)
+                T_temp = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY, user_given_std= USER_GIVEN_STD)
+                regions_S = self.check_inconsistent_zero_region(self.ref_mat, self.ref_time, gene)
+                regions_T = self.check_inconsistent_zero_region(self.query_mat, self.query_time, gene)
+                
+                if(len(regions_S) == 0 and len(regions_T)==0):
+                    S = S_temp
+                    T = T_temp 
+                elif(len(regions_S) != 0 and len(regions_T)!=0):
+                    common_std = min(min(S_temp.intpl_stds), min(T_temp.intpl_stds))/10
+                    user_given_std_arr_S = np.repeat(-1.0,self.n_artificial_time_points )
+                    for subregion_t in np.unique(np.asarray(regions_S).flatten() ):
+                        l = np.where(ref_processor.artificial_time_points==  subregion_t)
+                        user_given_std_arr_S[l[0][0]] = common_std
+                    S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                                                    ESTIMATE = False, user_given_std = user_given_std_arr_S)
+                   # print('S --', user_given_std_arr_S)
+                    user_given_std_arr_T = np.repeat(-1.0, self.n_artificial_time_points )
+                    for subregion_t in np.unique(np.asarray(regions_T).flatten() ):
+                        l = np.where(query_processor.artificial_time_points==  subregion_t)
+                        user_given_std_arr_T[l[0][0]] = common_std 
+                    T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                                                ESTIMATE = False, user_given_std = user_given_std_arr_T)
+                   # print('T --', user_given_std_arr_T)
+                elif(len(regions_S) != 0):
+                    common_std = min(min(S_temp.intpl_stds), min(T_temp.intpl_stds))/10
+                    
+                    user_given_std_arr_S = np.repeat(-1.0,self.n_artificial_time_points )
+                    for subregion_t in np.unique(np.asarray(regions_S).flatten() ):
+                        l = np.where(ref_processor.artificial_time_points==  subregion_t)
+                        user_given_std_arr_S[l[0][0]] = common_std
+                    S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                                                    ESTIMATE = False, user_given_std = user_given_std_arr_S)
+                    T = T_temp
+                        
+                elif(len(regions_T) != 0):
+                    common_std = min(min(S_temp.intpl_stds), min(T_temp.intpl_stds))/10
+                    user_given_std_arr_T = np.repeat(-1.0, self.n_artificial_time_points )
+                    for subregion_t in np.unique(np.asarray(regions_T).flatten() ):
+                        l = np.where(query_processor.artificial_time_points==  subregion_t)
+                        user_given_std_arr_T[l[0][0]] = common_std 
+                    T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                                                                ESTIMATE = False, user_given_std = user_given_std_arr_T)
+                    S = S_temp
+            
+                
+                
+              #  S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                                #                                            ESTIMATE=True, user_given_std=[])
+             #   inconsistent_traj_R = self.check_inconsistent_zero_region(self.ref_mat, self.ref_time, gene)
+             #   inconsistent_traj_Q = self.check_inconsistent_zero_region(self.query_mat, self.query_time, gene)
+                
+              #  if(inconsistent_traj_R and inconsistent_traj_Q): # if both have 0 expressed sub regions
+              #      std_S = np.repeat((np.min(S.intpl_stds)), self.n_artificial_time_points) 
+              #      T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY,
+                  #                                                              ESTIMATE = False, user_given_std = std_S)
+              #  else:
+                    # normal estimation
+  #                  S = ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY, USER_GIVEN_STD)
+  #                  T = query_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+            
+            
+            
         return [S,T]
     
     def interpolate_genes(self):
@@ -277,7 +534,7 @@ class RefQueryAligner:
         S = self.pairs[gene][0] 
         T = self.pairs[gene][1] 
         
-        fwd_DP = orgalign.DP5(S,T,  free_params = state_params, backward_run=False,  zero_transition_costs= zero_transition_costs, prohibit_case = prohibit_case) #,mean_batch_effect=self.mean_batch_effect) 
+        fwd_DP = orgalign.DP5(S,T,  free_params = self.state_params, backward_run=False,  zero_transition_costs= zero_transition_costs, prohibit_case = prohibit_case) #,mean_batch_effect=self.mean_batch_effect) 
         fwd_opt_cost = fwd_DP.run_optimal_alignment() 
         alignment_path = fwd_DP.backtrack() 
         fwd_DP.alignment_path = alignment_path
@@ -299,7 +556,7 @@ class RefQueryAligner:
        # proc2 = TimeSeriesPreprocessor.Prepocessor(); proc2.artificial_time_points = artificial_time_points2
        # S = proc1.create_summary_trends(X1[::-1], Y1[::-1])
        # T = proc2.create_summary_trends(X2[::-1], Y2[::-1])
-        bwd_DP = orgalign.DP5(S_rev,T_rev, free_params= state_params, backward_run=True, zero_transition_costs=zero_transition_costs)#,mean_batch_effect=self.mean_batch_effect) 
+        bwd_DP = orgalign.DP5(S_rev,T_rev, free_params= self.state_params, backward_run=True, zero_transition_costs=zero_transition_costs)#,mean_batch_effect=self.mean_batch_effect) 
         bwd_opt_cost = bwd_DP.run_optimal_alignment() 
         temp_path = bwd_DP.backtrack() 
         landscapeObj = orgalign.AlignmentLandscape(fwd_DP, bwd_DP, len(S.mean_trend), len(T.mean_trend), alignment_path, the_5_state_machine = True)
@@ -316,7 +573,65 @@ class RefQueryAligner:
         for a in self.results:
             self.results_map[a.gene] = a
         #print(self.pairs)
+        
+        
 
+        
+    def get_stat_df(self):
+
+        opt_alignment_costs = [] 
+        match_percentages =[] 
+        l2fc = []
+        for g in self.gene_list:
+            opt_alignment_costs.append(self.results_map[g].fwd_DP.opt_cost)
+            match_percentages.append(self.results_map[g].match_percentage/100)
+            rgex = np.asarray(self.ref_mat.loc[:,g])
+            qgex = np.asarray(self.query_mat.loc[:,g])        
+            l2fc.append(np.log2(np.mean(rgex)/np.mean(qgex))) 
+
+        df = pd.DataFrame([self.gene_list, match_percentages, opt_alignment_costs, l2fc]).transpose()
+        df.columns = ['Gene','alignment_similarity_percentage', 'opt_alignment_cost','l2fc']
+        df.set_index('Gene')
+        df['color'] = np.repeat('green',df.shape[0])
+        df.loc[df['alignment_similarity_percentage']<=0.5,'color'] = 'red'
+        df['abs_l2fc'] = np.abs(df['l2fc']) 
+        df = df.sort_values(['alignment_similarity_percentage','abs_l2fc'],ascending=[True, False])
+        
+        plt.subplots(1,2,figsize=(10,4))
+        plt.subplot(1,2,1)
+        #sb.kdeplot(df['alignment_similarity_percentage'])
+        print('mean matched percentage: ')
+        print(round(np.mean(df['alignment_similarity_percentage']),4)*100,'%' )
+        #sb.kdeplot(df['alignment_similarity_percentage'], fill=True,label='Alignment Similarity %')
+        #plt.xlabel('Alignment Similarity Percentage')
+        #plt.xlim([0,1])
+        temp = np.asarray([x*100 for x in df['alignment_similarity_percentage']]) 
+        p = sb.kdeplot(temp, fill=True,label='Alignment Similarity %')
+        plt.xlabel('Alignment Similarity Percentage')
+        plt.xlim([0,100])
+        p.set_yticklabels(p.get_yticks(), size = 12)
+        p.set_xticklabels(p.get_xticks(), size = 12)
+        plt.xlabel('Alignment similarity percentage', fontsize='12')
+        plt.ylabel('Density', fontsize='12')
+
+        plt.subplot(1,2,2)
+        VisualUtils.plot_alignmentSim_vs_optCost(df)
+        
+        return df
+        
+        
+    def get_aggregate_alignment(self):
+        average_alignment, alignment_path =  ClusterUtils.get_cluster_average_alignments(self, self.gene_list)
+        mat = ClusterUtils.get_pairwise_match_count_mat(self, self.gene_list )
+        print('Average Alignment: ', average_alignment)
+        VisualUtils.plot_alignment_path_on_given_matrix(paths = [alignment_path], mat=mat)
+        
+    def get_aggregate_alignment_for_subset(self, gene_subset):
+        average_alignment, alignment_path =  ClusterUtils.get_cluster_average_alignments(self, gene_subset)
+        mat = ClusterUtils.get_pairwise_match_count_mat(self, gene_subset )
+        print('Average Alignment: ', average_alignment)
+        VisualUtils.plot_alignment_path_on_given_matrix(paths = [alignment_path], mat=mat)
+        
     def align_all_pairs_no_thread_version(self):
         
         self.results = [] 
@@ -443,9 +758,10 @@ class RefQueryAligner:
                                tablefmt="grid",maxcolwidths=[None,None,None,30,None,None,None]))   
             
             
-            
     def show_ordered_alignments(self):
         
+        for a in self.results:
+            a.gene_pair = a.gene
         return AlignmentDistMan.AlignmentDist(self).order_genes_by_alignments()
                 
                 
@@ -613,7 +929,7 @@ class RefQueryAligner:
         S = TimeSeriesPreprocessor.SummaryTimeSeriesMVG(S_time, D_ref)
         T = TimeSeriesPreprocessor.SummaryTimeSeriesMVG(T_time, D_query)
         state_params=[0.99,0.5,0.4] #[0.95,0.5,0.4]
-        fwd_DP = orgalign.DP5(S,T,  free_params = state_params, backward_run=False,  zero_transition_costs= False, prohibit_case = False, MVG_MODE_KL = MVG_MODE_KL)#,mean_batch_effect=self.mean_batch_effect) 
+        fwd_DP = orgalign.DP5(S,T,  free_params = self.state_params, backward_run=False,  zero_transition_costs= False, prohibit_case = False, MVG_MODE_KL = MVG_MODE_KL)#,mean_batch_effect=self.mean_batch_effect) 
         fwd_opt_cost = fwd_DP.run_optimal_alignment() 
         alignment_path = fwd_DP.backtrack() 
         fwd_DP.alignment_path = alignment_path
@@ -816,7 +1132,7 @@ class RefQueryAligner:
 
             return pd.DataFrame(mat) 
 
-    
+
 class DEAnalyser:
     
     def __init__(self, al_obj):
@@ -1088,7 +1404,7 @@ class DEAnalyser:
         self.al_obj.match_points_T = t
 
     
-    
+
 class hcolors:
     MATCH = '\033[92m'
     INSERT = '\033[91m'
@@ -1101,4 +1417,449 @@ class hcolors:
        # al_str = 'DDDIIIVVVIIIMMM'
        # al_str = 'IIIDDDWWWIIIMMM'
        # al_str  = 'MMMIIIDDWWDDDIIVVDDMM'
+
+
+
     
+
+# ======================================================== NEW CODE FOR GENE VS GENE WITHIN SYSTEM COMPARISON
+
+class GeneAligner:
+    
+        def __init__(self, *args):
+            if(len(args) ==4 ):
+                self.run_init1(args[0], args[1], args[2], args[3])
+            elif(len(args) == 6 ): 
+                self.run_init2(args[0], args[1], args[2], args[3], args[4], args[5])
+            else:
+                print('pls pass the required number of args')
+                
+            self.init_gene_pairs()
+
+        def set_n_threads(self,n):
+            self.n_threads = n
+
+        # converts ref and query anndata objects to pd.DataFrames 
+        def run_init1(self, adata_ref, adata_query, gene_list, n_artificial_time_points):
+
+            if(isinstance(adata_ref.X, scipy.sparse.csr.csr_matrix) 
+               or isinstance(adata_ref.X,anndata._core.views.SparseCSCView)
+               or isinstance(adata_ref.X,scipy.sparse.csc.csc_matrix)):
+                ref_mat = pd.DataFrame(adata_ref.X.todense()) 
+            else:
+                ref_mat = pd.DataFrame(adata_ref.X)   
+
+            ref_mat.columns = adata_ref.var_names
+            ref_mat = ref_mat.set_index(adata_ref.obs_names)
+            ref_time = np.asarray(adata_ref.obs['time']) 
+
+            self.run_init2(ref_mat, ref_time, None, None, gene_list, n_artificial_time_points)
+
+        def run_init2(self, ref_mat, ref_time, query_mat, query_time, gene_list, n_artificial_time_points, CONST_STD=False):
+            self.ref_mat = ref_mat
+            self.ref_time = ref_time
+            self.gene_list = gene_list
+            self.pairs = {}
+            self.genes = {}
+            self.n_threads = multiprocessing.cpu_count()
+            self.CONST_STD = CONST_STD
+
+            # to preserve the number of time points ratio 
+            self.n_artificial_time_points = n_artificial_time_points
+
+        def init_gene_pairs(self):    
+            
+            #genes = {} 
+            #for g in tqdm(gene_list) :
+            #    genes[g] = self.run_interpolation(g)
+            
+            pairs = {}
+            self.GENE_PAIRS = []
+            for i in tqdm_notebook(range(len(self.gene_list))):
+                for j in range(i, len(self.gene_list)):
+                    if(i==j):
+                        continue
+                    gene1 = self.gene_list[i]
+                    gene2 = self.gene_list[j]
+                    self.GENE_PAIRS.append( (gene1, gene2) )
+                    #pairs[ (gene1, gene2) ]  = [ self.genes[gene1], self.genes[gene2] ] 
+
+            print('n_gene_pairs for comparison: ', len(self.GENE_PAIRS))
+
+
+        def run_interpolation(self, gene):
+            ref_processor = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, 15, 0.1, False)
+            return ref_processor.prepare_interpolated_gene_expression_series(gene, WEIGHT_BY_CELL_DENSITY = True)
+
+        def align_single_pair_within_system(self, KEY, state_params = [0.99,0.5,0.4], zero_transition_costs=False, prohibit_case = False): 
+
+          #  KEY = (gene1, gene2)
+            if( (KEY not in self.pairs.keys()) ):
+            
+                if( (KEY[1],KEY[0]) in self.pairs.keys() ):
+                    KEY = (KEY[1],KEY[0])
+                    self.pairs[KEY] = [ self.genes[KEY[0]], self.genes[KEY[1]] ] 
+                else:
+                    gene1 = KEY[0]
+                    gene2 = KEY[1]
+                    
+                    if(gene1 not in self.genes.keys()):
+                        self.genes[gene1] = self.run_interpolation(gene1)
+                    if(gene2 not in self.genes.keys()):
+                        self.genes[gene2] = self.run_interpolation(gene2)
+                    self.pairs[KEY] = [ self.genes[gene1], self.genes[gene2] ] 
+
+            S = self.pairs[KEY][0] 
+            T = self.pairs[KEY][1] 
+
+            fwd_DP = orgalign.DP5(S,T,  free_params = self.state_params, backward_run=False,  zero_transition_costs= zero_transition_costs, prohibit_case = prohibit_case) #,mean_batch_effect=self.mean_batch_effect) 
+            fwd_opt_cost = fwd_DP.run_optimal_alignment() 
+            alignment_path = fwd_DP.backtrack() 
+            fwd_DP.alignment_path = alignment_path
+
+            landscapeObj = orgalign.AlignmentLandscape(fwd_DP, None, len(S.mean_trend), len(T.mean_trend), alignment_path, the_5_state_machine = True)
+            landscapeObj.collate_fwd() 
+
+            return AligmentObj(KEY, S,T, fwd_DP, None, landscapeObj)
+
+
+        def align_all_pairs_within_system(self):
+
+            print('WINDOW_SIZE=',self.WINDOW_SIZE)
+            with Pool(self.n_threads) as p:
+                results = list(tqdm_notebook(p.imap(self.align_single_pair_within_system, self.GENE_PAIRS), total=len(self.GENE_PAIRS)))
+            self.results = results 
+
+            self.results_map = {}
+            for a in self.results:
+                self.results_map[a.gene] = a
+                
+
+        def get_cluster_average_alignments(self, cluster_id, deterministic=True):
+
+                cluster_alobjs = self.get_cluster_alignment_objects(cluster_id)
+                i = self.results[0].fwd_DP.T_len
+                j = self.results[0].fwd_DP.S_len
+
+                avg_alignment = ''
+                tracked_path = []
+                tracked_path.append([i,j])
+
+                while(True):
+                    if(i==0 and j==0):
+                        break
+                    backtrack_states_probs = {}
+                    backtrack_states_probs['M'] = 0 
+                    backtrack_states_probs['W'] = 0 
+                    backtrack_states_probs['V'] = 0 
+                    backtrack_states_probs['D'] = 0 
+                    backtrack_states_probs['I'] = 0 
+                    for a in cluster_alobjs:
+                        backtract_state = a.landscape_obj.L_matrix_states[i,j]
+                        if(backtract_state=='0'):
+                            backtrack_states_probs['M']+=1 
+                        elif(backtract_state=='1'):
+                            backtrack_states_probs['W']+=1 
+                        elif(backtract_state=='2'):
+                            backtrack_states_probs['V']+=1 
+                        elif(backtract_state=='3'):
+                            backtrack_states_probs['D']+=1 
+                        elif(backtract_state=='4'):
+                            backtrack_states_probs['I']+=1 
+                    for state in backtrack_states_probs.keys(): 
+                        backtrack_states_probs[state] = backtrack_states_probs[state]/len(cluster_alobjs) 
+
+                    if(deterministic):
+                        cs = np.argmax(np.asarray(list(backtrack_states_probs.values())) )
+                    else:
+                        cs = MyFunctions.sample_state(np.asarray(list(backtrack_states_probs.values()) ) )
+                    if(cs==0):
+                        i = i-1
+                        j = j-1
+                        avg_alignment = 'M' + avg_alignment 
+                    elif(cs==1 or cs==3):
+                        j= j-1
+                        if(cs==1):
+                            avg_alignment = 'W' + avg_alignment
+                        else:
+                            avg_alignment = 'D' + avg_alignment
+                    elif(cs==2 or cs==4):
+                        i=i-1
+                        if(cs==2):
+                            avg_alignment = 'V' + avg_alignment
+                        else:
+                            avg_alignment = 'I' + avg_alignment
+
+                    tracked_path.append([i,j])
+
+                return avg_alignment, tracked_path
+
+
+        def get_pairwise_match_count_mat(self):
+                mat = []
+                nT_points = len(self.results[0].T.time_points)
+                nS_points = len(self.results[0].S.time_points)
+                for i in range(nT_points + 1):
+                    mat.append(np.repeat(0.0, nS_points+1))
+
+                # counts of total matches between the each pair of ref and query timepoints across all alignments 
+                for a in self.results:
+                    matchS = a.match_points_S+1
+                    matchT = a.match_points_T+1
+                    for i in range(len(matchS)):
+                        mat[matchT[i]][matchS[i]] = mat[matchT[i]][matchS[i]] + 1
+
+                return pd.DataFrame(mat) 
+            
+            
+        def cluster_all_alignments(self, n_clusters=None, possible_dist_threshold=None, linkage_method='complete', scheme=0):
+            
+            # compute the pairwise alignment distance matrix 
+            if(not hasattr(self, 'DistMat' )):
+                print('computing the Distance matrix')
+                DistMat = AlignmentDistMan.AlignmentDist(self).compute_alignment_ensemble_distance_matrix(scheme=scheme)
+                #c = sb.clustermap(DistMat,figsize=(10,30)) 
+                self.DistMat = DistMat
+            if(n_clusters!=None):
+                gene_clusters, cluster_ids = self.cluster_alignments_v1(n_clusters=n_clusters, linkage_method= linkage_method)
+            else:
+                gene_clusters, cluster_ids = self.cluster_alignments_v2(linkage_method, possible_dist_threshold=possible_dist_threshold)
+            self.gene_clusters = gene_clusters
+            self.cluster_ids = cluster_ids
+        
+    
+        def cluster_alignments_v1(self, n_clusters, linkage_method):
+
+            cluster = AgglomerativeClustering(n_clusters=n_clusters, affinity='precomputed', linkage=linkage_method) 
+            x = cluster.fit_predict(self.DistMat)
+            gene_clusters = orgalign.Utils().check_alignment_clusters(n_clusters, x,
+                                                                    self.results, n_cols=4, figsize=(10,10)) 
+            return gene_clusters, x   
+
+        def cluster_alignments_v2(self, linkage_method, possible_dist_threshold = None):
+
+            X = squareform(self.DistMat)
+            #print(X)
+            Z = linkage(X, linkage_method)
+            if(possible_dist_threshold==None):
+                possible_dist_threshold = np.quantile(squareform(self.DistMat),0.25)
+            x = fcluster(Z, possible_dist_threshold , criterion='distance') # cluster ids
+            n_clusters = len(np.unique(x))
+            gene_clusters = orgalign.Utils().check_alignment_clusters(n_clusters, x,
+                                                                    self.results, n_cols=4, figsize=(10,10)) 
+            x = x-1 # to make cluster ids 0-indexed
+            return gene_clusters, x   
+
+
+
+        def show_cluster(self, cluster_id):
+
+            for i in range(len(self.cluster_ids)):
+                if(self.cluster_ids[i]==cluster_id):
+                    print('Gene: ', self.results[i].gene)
+                    print(self.results[i].al_visual)
+                    self.results[i].plotTimeSeries(self, plot_cells=True) 
+                    plt.show() 
+                    print('----------------------------------------------')
+
+
+        def show_cluster_alignment_strings(self,cluster_id):
+            for i in range(len(self.cluster_ids)):
+                if(self.cluster_ids[i]==cluster_id):
+                    print(self.results[i].alignment_str)
+                    self.results[i].cluster_id = cluster_id
+
+        def get_cluster_alignment_objects(self, cluster_id):
+            cluster_al_objects = []
+            for i in range(len(self.cluster_ids)):
+                if(self.cluster_ids[i]==cluster_id):
+                    #print(self.results[i].alignment_str)
+                    self.results[i].cluster_id = cluster_id
+                    cluster_al_objects.append(self.results[i])
+            return cluster_al_objects
+
+        def show_cluster_plots(self, cluster_id, show_alignment = False):
+
+            temp = np.unique(self.cluster_ids == cluster_id, return_counts=True)[1][1]
+            n_cols = 4
+            n_rows = int(np.ceil(temp/n_cols))
+            fig,axs = plt.subplots(n_rows,n_cols,figsize=(20,n_rows*3))
+
+            k = 1
+            for i in range(len(self.cluster_ids)):
+                if(self.cluster_ids[i]==cluster_id):
+                    plt.subplot(n_rows, n_cols, k )
+                    if(show_alignment):
+                        self.results[i].plotTimeSeriesAlignment()
+                    else:
+                        self.results[i].plotTimeSeries(self, plot_cells=True, plot_mean_trend=True) 
+                    plt.title(self.results[i].gene)
+                    k = k+1
+            fig.tight_layout()
+            n = n_cols * n_rows
+            i = 1
+            while(k<=n):
+                axs.flat[-1*i].set_visible(False) 
+                k = k+1
+                i=i+1         
+
+
+
+        def show_cluster_table(self):
+
+            info = []
+            for cluster_id in range(len(self.mvg_cluster_average_alignments)):
+                mvg_obj = self.mvg_cluster_average_alignments[cluster_id]
+                al_str = mvg_obj.al_visual
+                al_str = al_str.replace('5-state string','')
+                al_str = al_str.replace('Alignment index','')
+                al_str = al_str.replace('Reference index','')
+                al_str = al_str.replace('Query index','')
+
+                n_genes = len(self.gene_clusters[cluster_id])
+                if(n_genes<15):
+                    genes = self.gene_clusters[cluster_id]
+                else:
+                    genes = self.gene_clusters[cluster_id][1:7] + [' ... '] +  self.gene_clusters[cluster_id][n_genes-7:n_genes]
+                info.append((cluster_id, n_genes, genes, mvg_obj.get_series_match_percentage()[0],mvg_obj.get_series_match_percentage()[1],mvg_obj.get_series_match_percentage()[2], al_str))
+
+            print(tabulate(pd.DataFrame(info),  headers=['cluster_id','n_genes','gene_set','A%','S%','T%','cell-level alignment'],
+                                   tablefmt="grid",maxcolwidths=[None,None,None,30,None,None,None]))   
+
+
+
+        def show_ordered_alignments(self):
+
+            return AlignmentDistMan.AlignmentDist(self).order_genes_by_alignments()
+
+
+        def show_pairwise_distance_matrix(self, al_obj): # pairwise log compression matrix 
+
+            # check compression of each matched pair
+            temp_mat = al_obj.fwd_DP.DP_util_matrix
+            compression_dist_mat = [] 
+            for i in range(1,temp_mat.shape[0]):
+                row = []
+                for j in range(1,temp_mat.shape[1]):
+                    x = np.abs(temp_mat[i,j][2])
+                    row.append(float(x))
+                compression_dist_mat.append(row)   
+
+            x = pd.DataFrame(np.log10(np.asarray(compression_dist_mat) ))
+            min_x =  np.nanmin(np.asarray(x).flatten())
+            x = x.fillna(min_x) 
+            sb.heatmap(x, cmap='jet')  
+
+
+        # separately get correlation coefficient of ref and query mean trends along the trajectory by 
+        # first doing distributional interpolation with number of time bins and then take sliding window to compute 
+        # pearson correlation coefficient 
+        def get_correlation_coefficient_trend(self, gene, SLIDING_WINDOW = 10, n_bins = 50):
+
+            # correlation coefficient trend over sliding window of 10 bins
+            rp = TimeSeriesPreprocessor.Prepocessor(self.ref_mat, self.ref_time, n_bins)
+            qp =  TimeSeriesPreprocessor.Prepocessor(self.query_mat, self.query_time, n_bins)
+            S = rp.prepare_interpolated_gene_expression_series(gene,WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+            T = qp.prepare_interpolated_gene_expression_series(gene,WEIGHT_BY_CELL_DENSITY = self.WEIGHT_BY_CELL_DENSITY)
+            Y1 = S.Y; Y2 = T.Y
+            X1 = S.X; X2 = T.X
+            bin_times = np.unique(X1) 
+            correlation_coefficients = []
+            for i in range(len(bin_times)):
+                if(i+SLIDING_WINDOW>=len(bin_times)):
+                    break
+                s = []
+                t = []
+                for k in range(SLIDING_WINDOW):
+                    s.append(S.mean_trend[i+k])
+                    t.append(T.mean_trend[i+k])
+                cc = stats.pearsonr(s,t)[0]
+                #print('Pearson correlation: ', stats.pearsonr(s,t)[0])
+                correlation_coefficients.append(cc)
+            return correlation_coefficients
+
+        def get_correlation_coefficient_trend_for_all_genes(self):
+
+            cc = []
+            for gene in tqdm_notebook(self.gene_list):
+                pcc = self.get_correlation_coefficient_trend(gene, SLIDING_WINDOW=10)
+                cc.append(pcc)
+            df = pd.DataFrame(cc) 
+            df.index = self.gene_list
+            return df
+
+
+        def get_match_stat_for_all_genes(self):
+            m_p = []
+            m_ps = []
+            m_pt = []
+            for a in self.results:
+                m_p.append(a.get_series_match_percentage()[0])
+                m_ps.append(a.get_series_match_percentage()[1])
+                m_pt.append(a.get_series_match_percentage()[2])
+
+            df = pd.DataFrame([m_p,m_ps,m_pt,self.cluster_ids]).transpose() 
+            df.columns = ['match %', 'match % S', 'match % T', 'cluster_id']
+            return df 
+
+
+        #interpolated gene expression heat matrix 
+        def __prepare_intpl_df(self,intpl_df, intpl_time):
+            intpl_df = pd.DataFrame(intpl_df)
+            intpl_df = intpl_df.transpose()
+            intpl_df['time'] = intpl_time
+            intpl_df = intpl_df.sort_values(by='time')
+            intpl_df = intpl_df.iloc[:,intpl_df.columns!='time']
+            intpl_df.columns = self.gene_list
+            df_zscore = intpl_df.apply(zscore)
+            return df_zscore
+
+        def __get_zscore_expr_mat(self,expr_mat, expr_time):
+            expr_mat['time'] = expr_time
+            expr_mat = expr_mat.sort_values(by='time')
+            df = expr_mat
+            df  = df.iloc[:,df.columns!='time']
+            df_zscore = df.apply(zscore)
+            #df_zscore  = df_zscore.iloc[:,df_zscore.columns!='time']
+            return df_zscore
+
+        # z normalised for plotting purposes
+        def __save_interpolated_and_noninterpolated_mats(self):
+            ref_intpl_df = [] 
+            query_intpl_df = [] 
+            for gene in self.gene_list:
+                ref_intpl_df.append(self.pairs[gene][0].Y)
+                query_intpl_df.append(self.pairs[gene][1].Y) 
+            self.ref_intpl_df = self.__prepare_intpl_df(ref_intpl_df, self.pairs[gene][0].X)
+            self.query_intpl_df = self.__prepare_intpl_df(query_intpl_df, self.pairs[gene][1].X)
+            self.ref_expr_df = self.__get_zscore_expr_mat(self.ref_mat[self.gene_list], self.ref_time )
+            self.query_expr_df = self.__get_zscore_expr_mat(self.query_mat[self.gene_list], self.query_time )
+            #return ref_intpl_df, query_intpl_df, ref_expr_df, query_expr_df 
+
+        def __plot_comparative_heatmap(self, ref_df, query_df, cluster_id = None):
+
+            if(cluster_id!=None):
+                ref_df = ref_df[self.gene_clusters[cluster_id]]
+                query_df = query_df[self.gene_clusters[cluster_id]]
+                fig, axs = plt.subplots(1,2, figsize=(10,ref_df.shape[1]*0.5))
+            else:
+                fig, axs = plt.subplots(1,2, figsize=(10,10))
+
+           # plt.subplot(1,2,1)
+            sb.clustermap(ref_df.transpose(), xticklabels=False, vmin=-2, vmax=2, cbar=False,cmap = 'YlGnBu', col_cluster=False)#, ax=axs[0])
+           # plt.subplot(1,2,2)
+            sb.clustermap(query_df.transpose(), xticklabels=False, vmin=-2, vmax=2,cmap = 'YlGnBu',col_cluster=False)#,ax=axs[1])
+            fig.tight_layout()
+
+        def prepare_interpolated_non_interpolated_mats(self):
+            self.__save_interpolated_and_noninterpolated_mats() 
+
+        def plot_comparative_heatmap_intpl(self, cluster_id = None):
+            if(not hasattr(self, 'ref_intpl_df' )):
+                self.__save_interpolated_and_noninterpolated_mats() 
+            self.__plot_comparative_heatmap(self.ref_intpl_df, self.query_intpl_df,cluster_id=cluster_id)
+
+        def plot_comparative_heatmap_expr(self, cluster_id = None):
+            if(not hasattr(self, 'ref_expr_df' )):
+                self.__save_interpolated_and_noninterpolated_mats() 
+            self.__plot_comparative_heatmap(self.ref_expr_df, self.query_expr_df,cluster_id=cluster_id)

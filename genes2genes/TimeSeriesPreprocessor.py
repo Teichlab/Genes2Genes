@@ -1,6 +1,7 @@
 import numpy as np
 import seaborn as sb
 import torch
+from optbinning import ContinuousOptimalBinning
 
 from . import MyFunctions
 from . import MVG
@@ -33,8 +34,8 @@ class SummaryTimeSeries:
         self.cell_densities = self.cell_densities[::-1]
         self.intpl_means = self.intpl_means[::-1]
         self.intpl_stds = self.intpl_stds[::-1]
-        
-        
+
+
 class Prepocessor:
     
     def __init__(self, *args):
@@ -43,9 +44,11 @@ class Prepocessor:
             pseudotime_series = args[1]
             m = args[2]
             WINDOW_SIZE = args[3]
+            optimal_binning = args[4]
+            opt_binning = args[5]
             self.GEX_MAT = GEX_MAT
             self.pseudotime_series = pseudotime_series
-            self.compute_cell_density_trend(WINDOW_SIZE, m=m) 
+            self.compute_cell_density_trend(WINDOW_SIZE, m=m, optimal_binning=optimal_binning, opt_binning = opt_binning) 
         else:
             self.GEX_MAT = None
             self.pseudotime_series = None
@@ -83,8 +86,6 @@ class Prepocessor:
             time_bins = time_bins + list(np.repeat(bins_indices[i+1], len(self.GEX_MAT[t]))) 
         return bins_indices[1:len(bins_indices)], time_bins, np.asarray(data_bins), bin_compositions
 
-
-
     # **** CellAlign paper's interpolation method based on Gaussian Kernel
     def interpolate_time_series(self, gene): # WINDOW_SIZE = 0.1 # default value used in CellAlign 
 
@@ -97,7 +98,6 @@ class Prepocessor:
             weighted_sum = weighted_sum/np.sum(weights)
             intpl_gex.append(weighted_sum)
         intpl_gex = np.asarray(intpl_gex).flatten() 
-        #return intpl_gex, self.artificial_time_points
 
         # min max normalisation
         scaled_intpl_gex = []
@@ -109,7 +109,7 @@ class Prepocessor:
     # Interpolation of distributions based on Gaussian kernel (similar to above method but we get a distribution of artificial cells for interpolated time points now)
     #  weighted mean and weighted std based dist interpolation
     # Extending the CellAlign interpolation method based on Gaussian Kernel 
-    def interpolate_time_series_distributions(self, gene, N=50, CONST_STD= False,WEIGHT_BY_CELL_DENSITY=False):
+    def interpolate_time_series_distributions(self, gene, N=50, CONST_STD= False,WEIGHT_BY_CELL_DENSITY=False, ESTIMATE = True, user_given_std =[]):
 
         torch.manual_seed(1)
         intpl_gex = []
@@ -118,44 +118,47 @@ class Prepocessor:
         intpl_stds = []
 
         for intpl_i in range(len(self.artificial_time_points)):
-            weights = self.cell_weights[intpl_i]
-            weighted_sum = 0.0
-            for cell_i in range(len(self.pseudotime_series)):
-                weighted_sum = weighted_sum + (weights[cell_i]*self.GEX_MAT[gene][cell_i]) 
-            weighted_sum = weighted_sum/np.sum(weights)
-            dist_mean = weighted_sum
-
-            if(CONST_STD): # for getting just the average trend across
-                dist_std = 0.1
-            else: # tweighted standard deviation 
-                real_mean = np.mean(self.GEX_MAT[gene]) 
-                weighted_sum_std = 0.0
+            
+            # estimate weighted mean and weighted variance
+            #if(ESTIMATE):
+            if(user_given_std[intpl_i] <0):
+                weights = self.cell_weights[intpl_i]
+                weighted_sum = 0.0
                 for cell_i in range(len(self.pseudotime_series)):
-                    weighted_sum_std = weighted_sum_std + (weights[cell_i]*(( self.GEX_MAT[gene][cell_i] - real_mean) ** 2))
-                n = len(self.pseudotime_series)
-                weighted_std = np.sqrt(weighted_sum_std/(np.sum(weights) * (n-1)/n)) 
-                #print(weighted_std)
-                if(WEIGHT_BY_CELL_DENSITY):
-                    weighted_std = weighted_std * self.cell_densities[intpl_i] # weighting according to cell density 
-                dist_std = weighted_std
-                #print(dist_std, ' -- ', self.cell_densities[intpl_i])
-            if(dist_std==0 or np.isnan(dist_std)): # case of single data point or no data points
-                dist_std = 0.1 #np.mean(summary_series_obj.std_trend)
+                    weighted_sum = weighted_sum + (weights[cell_i]*self.GEX_MAT[gene][cell_i]) 
+                weighted_sum = weighted_sum/np.sum(weights)
+                dist_mean = weighted_sum
+
+                if(CONST_STD): # for getting just the average trend across
+                    dist_std = 0.1
+                else: # tweighted standard deviation 
+                    real_mean = np.mean(self.GEX_MAT[gene]) 
+                    weighted_sum_std = 0.0
+                    for cell_i in range(len(self.pseudotime_series)):
+                        weighted_sum_std = weighted_sum_std + (weights[cell_i]*(( self.GEX_MAT[gene][cell_i] - real_mean) ** 2))
+                    n = len(self.pseudotime_series)
+                    weighted_std = np.sqrt(weighted_sum_std/(np.sum(weights) * (n-1)/n)) 
+                    if(WEIGHT_BY_CELL_DENSITY):
+                        weighted_std = weighted_std * self.cell_densities[intpl_i] # weighting according to cell density 
+                    dist_std = weighted_std
+                if(dist_std==0 or np.isnan(dist_std)): # case of single data point or no data points
+                    #print('!!!! ALERT ---- DIST STD =0 nan')
+                    dist_std = 0.01#0.1 #np.mean(summary_series_obj.std_trend)
+            else:
+                dist_mean = 0.0 
+                dist_std =  user_given_std[intpl_i] #
             D,temp1,temp2 = MyFunctions.generate_random_dataset(N, dist_mean, dist_std)
             
             intpl_gex.append(D)
             intpl_means.append(dist_mean)
             intpl_stds.append(dist_std)
             all_time_points.append(np.repeat(self.artificial_time_points[intpl_i], N)) 
-            
+
         return [np.asarray(intpl_gex).flatten(), np.asarray(all_time_points).flatten(), self.artificial_time_points, intpl_means, intpl_stds]
     
 
-    def prepare_interpolated_gene_expression_series(self, gene, CONST_STD=False, WEIGHT_BY_CELL_DENSITY=False):
-        # under the default setting: WINDOW_SIZE=0.1, N=50, m=50, CONST_STD=EVAL_AVERAGE_TREND
-        # return list with intpl_ref, all_time_points, artificial_time_points, intpl_ref_means, intpl_ref_stds
-       # intpl_out = self.interpolate_time_series_distributions(observed_data_mat, observed_data_time, gene)
-        intpl_out = self.interpolate_time_series_distributions(gene, CONST_STD=CONST_STD, WEIGHT_BY_CELL_DENSITY= WEIGHT_BY_CELL_DENSITY)
+    def prepare_interpolated_gene_expression_series(self, gene, CONST_STD=False, WEIGHT_BY_CELL_DENSITY=False,  ESTIMATE = True, user_given_std =[]):
+        intpl_out = self.interpolate_time_series_distributions(gene, CONST_STD=CONST_STD, WEIGHT_BY_CELL_DENSITY= WEIGHT_BY_CELL_DENSITY, ESTIMATE=ESTIMATE, user_given_std=user_given_std)
         X = intpl_out[1]; Y =  intpl_out[0]; artificial_time_points = intpl_out[2]
         obj = self.create_summary_trends(X,Y) 
         obj.intpl_means = intpl_out[3]
@@ -166,21 +169,30 @@ class Prepocessor:
         return obj
 
     
-    def compute_cell_density_trend(self, WINDOW_SIZE = 0.1, m=50): # TODO LATEST TEST 07/01/2023 earlier used 0.15 for early Jan runs
+    def get_optimal_binning(self, time_var_arr, n_points):
+        x = time_var_arr
+        optb = ContinuousOptimalBinning(name='pseudotime', dtype="numerical", max_n_bins=n_points)
+        # this pacakge uses mixed integer programming based optimization to determine an optimal binning
+        optb.fit(x, x)
+        return optb.splits   
+
+    
+    def compute_cell_density_trend(self, WINDOW_SIZE = 0.1, m=50, optimal_binning = False, opt_binning = []): # TODO LATEST TEST 07/01/2023 earlier used 0.15 for early Jan runs
         
-        #print('Window size = ', WINDOW_SIZE)
         artificial_time_points = []
-        for j in range(1,m):
-            artificial_time_points.append((j-1)/(m-1))    
-        artificial_time_points.append(1.0)
-        
-        artificial_time_points = np.asarray(artificial_time_points)
-        artificial_time_points = artificial_time_points[artificial_time_points >= np.min(self.pseudotime_series)] 
-        artificial_time_points = artificial_time_points[artificial_time_points <= np.max(self.pseudotime_series)] 
-        #print( artificial_time_points , '<---- ')
-        if(artificial_time_points[0]!=0.0):
-            artificial_time_points = np.asarray([0] + list(artificial_time_points)) 
-        
+        if(optimal_binning):
+            artificial_time_points = opt_binning
+        else:
+            for j in range(1,m):
+                artificial_time_points.append((j-1)/(m-1))    
+            artificial_time_points.append(1.0)
+
+            artificial_time_points = np.asarray(artificial_time_points)
+            artificial_time_points = artificial_time_points[artificial_time_points >= np.min(self.pseudotime_series)] 
+            artificial_time_points = artificial_time_points[artificial_time_points <= np.max(self.pseudotime_series)] 
+            if(artificial_time_points[0]!=0.0):
+                artificial_time_points = np.asarray([0] + list(artificial_time_points))     
+
         cell_densities = [] 
         cell_weights = {} 
         
@@ -195,28 +207,13 @@ class Prepocessor:
         cell_densities = np.asarray(cell_densities)
         cell_densities = cell_densities/len(self.pseudotime_series)
         
-        # assigning second minimum in the case of 0 cell density values
-        #second_min = np.sort(cell_densities)[1]  
-        #for i in range(len(cell_densities)):
-        #    if(cell_densities[i]==0):
-        #        cell_densities[i]= second_min 
-        
         self.cell_weights = cell_weights
         self.artificial_time_points = artificial_time_points
-        
         self.cell_densities = cell_densities
-        
-        #print(self.artificial_time_points)
-        return cell_weights, artificial_time_points, cell_densities
     
-        #scaled_cell_densities = Utils().minmax_normalise(cell_densities)
-        # assigning second minimum in the case of 0 cell density values
-        #second_min = np.sort(scaled_cell_densities)[1]  
-        #for i in range(len(scaled_cell_densities)):
-        #    if(scaled_cell_densities[i]==0):
-        #        scaled_cell_densities[i]= second_min        
-        #self.cell_densities = scaled_cell_densities
-        #return cell_weights, artificial_time_points, scaled_cell_densities
+        return cell_weights, artificial_time_points, cell_densities
+
+    
 
 # Later TODO: make superclass SummaryTimeSeries for both univariate and multivariate cases
 class SummaryTimeSeriesMVG:
@@ -230,7 +227,7 @@ class SummaryTimeSeriesMVG:
             data_bin = torch.tensor(np.asarray(data_bin) )
             μ, C = MVG.compute_mml_estimates(data_bin, data_bin.shape[1], data_bin.shape[0]) 
             self.mean_trends.append(μ)
-        
+
 
 
 class Utils:
@@ -278,8 +275,8 @@ class Utils:
         #sb.kdeplot(ref_data, fill=True)
         #sb.kdeplot(query_data, fill=True)
         return match_compression
-    
-    
+
+
 def refine_pseudotime(adata):
     average_ctype_mean_times = {}
 
@@ -307,4 +304,4 @@ def refine_pseudotime(adata):
             adata.obs['refined_time'][i] = average_ctype_mean_times[ctype] 
             
     return Utils.minmax_normalise(np.asarray(adata.obs.refined_time))
-    
+

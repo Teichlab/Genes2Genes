@@ -1,5 +1,6 @@
 import regex as re
 from . import OrgAlign as orgalign 
+import OrgAlign as orgalign
 import numpy as np 
 from tqdm import tqdm 
 import pandas as pd
@@ -27,7 +28,7 @@ class TempFSMObj:
         for key in transition_counts.keys():
             transition_probs[key] = transition_counts[key]/sum_transitions
         return transition_probs, transition_counts
-    
+
 def compute_msg_len(transition_counts, fsm, al_len):
     
     msg_len = 0.0
@@ -59,7 +60,7 @@ def get_region_str(al_str):
                 regions += al_str[i]
                 continue
         return regions
-    
+
 def test_unique_index_sums(a):
     index_sum = 0
     m = {'M':0,'I':0,'D':0,'W':0,'V':0}
@@ -178,7 +179,7 @@ class AlignmentDist:
         
         for a in self.results:
             gene_strs.append(a.alignment_str)
-            genes.append(a.gene)
+            genes.append(a.gene_pair)
             w_index = a.alignment_str.find('W')
             m_index = a.alignment_str.find('M')
             v_index = a.alignment_str.find('V')
@@ -234,4 +235,4 @@ class AlignmentDist:
 
         print(tabulate(table, headers=['Gene','Alignment']))
         return sorted_gene_list
-    
+

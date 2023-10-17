@@ -15,6 +15,8 @@ from scipy.special import kl_div
 from . import MyFunctions
 from . import TimeSeriesPreprocessor
 from . import MVG
+import pickle
+import scipy
 
 torch.set_default_dtype(torch.float64)
 
@@ -71,10 +73,19 @@ class FiveStateMachine:
             self.P_wi = 0.0
             self.P_vi = 0.0 
         else:
-            self.P_ii = P_ii/2.0      # USE P_II for prohibitive case
+           # self.P_ii = P_ii/2.0      
+           # self.P_mi = P_mi
+           # self.P_wi = 0.0
+           # self.P_vi = self.P_ii 
+            
+            # NEW TEST =====+++++
+            self.P_ii = P_ii      # USE P_II for prohibitive case
             self.P_mi = P_mi
             self.P_wi = 0.0
-            self.P_vi = self.P_ii # USE 0 for prohibitive case
+            self.P_vi = P_ii # USE 0 for prohibitive case
+            # NEW TEST =====+++++
+            
+            
         
         self.P_di = 1.0 - self.P_ii - self.P_mi - self.P_wi - self.P_vi
         #print(self.P_ii + self.P_mi + self.P_wi + self.P_vi + self.P_di)
@@ -247,7 +258,7 @@ class DP5:
         self.init_DP_matrices()  
         self.init_backtrackers() 
         self.alignment_str = "" 
-        self.init() 
+        self.init()     
         
     def init_DP_matrices(self):    
         
@@ -294,6 +305,10 @@ class DP5:
             
     def init(self): 
         
+        ProbM = 0.9999
+        ProbI = (1.0 - ProbM)/2.0
+        ProbD = ProbI
+        
         # DP_M --- first row and first col --- np.inf
         for j in range(1,self.S_len+1):
             self.DP_M_matrix[0,j] = np.inf
@@ -317,16 +332,16 @@ class DP5:
             self.backtrackers_I[0][j] = [np.inf,np.inf,np.inf]
             
         for i in range(1,self.T_len+1):
-            if(isinstance(self.S, TimeSeriesPreprocessor.SummaryTimeSeries)):
-                cost_D, cost_I = self.compute_cell(i-1,0, only_non_match=True)
-            elif(isinstance(self.S, TimeSeriesPreprocessor.SummaryTimeSeriesMVG)):
-                cost_D, cost_I = self.compute_cell_as_MVG(i-1,0, only_non_match=True)
+            #if(isinstance(self.S, TimeSeriesPreprocessor.SummaryTimeSeries)):
+            cost_D, cost_I = self.compute_cell(i-1,0, only_non_match=True)
+            #elif(isinstance(self.S, TimeSeriesPreprocessor.SummaryTimeSeriesMVG)):
+            #    cost_D, cost_I = self.compute_cell_as_MVG(i-1,0, only_non_match=True)
                 
             #self.DP_I_matrix[i,0] = self.DP_I_matrix[i-1,0] + cost_I + self.FSA.I_ii  
             
             #  [START] NEW TEST 21122022 ====
             if(i==1):
-                self.DP_I_matrix[i,0] = self.DP_I_matrix[i-1,0] + cost_I -np.log(1/3) 
+                self.DP_I_matrix[i,0] = self.DP_I_matrix[i-1,0] + cost_I -np.log(ProbI)#-np.log(1/3)  
             else:
                 self.DP_I_matrix[i,0] = self.DP_I_matrix[i-1,0] + cost_I + self.FSA.I_ii 
             # [END] NEW TEST 21122022 ====
@@ -343,16 +358,16 @@ class DP5:
             self.backtrackers_D[i][0] = [np.inf,np.inf,np.inf]
             
         for j in range(1,self.S_len+1):
-            if(isinstance(self.S, TimeSeriesPreprocessor.SummaryTimeSeries)):
-                cost_D, cost_I =self.compute_cell(0,j-1, only_non_match=True)
-            elif(isinstance(self.S, TimeSeriesPreprocessor.SummaryTimeSeriesMVG)):
-                cost_D, cost_I =self.compute_cell_as_MVG(0,j-1, only_non_match=True)
+            #if(isinstance(self.S, TimeSeriesPreprocessor.SummaryTimeSeries)):
+            cost_D, cost_I =self.compute_cell(0,j-1, only_non_match=True)
+            #elif(isinstance(self.S, TimeSeriesPreprocessor.SummaryTimeSeriesMVG)):
+            #    cost_D, cost_I =self.compute_cell_as_MVG(0,j-1, only_non_match=True)
                 
             #self.DP_D_matrix[0,j] = self.DP_D_matrix[0,j-1] + cost_D + self.FSA.I_dd
             
             #  [START] NEW TEST 21122022 ====
             if(j==1):
-                self.DP_D_matrix[0,j] = self.DP_D_matrix[0,j-1] + cost_D -np.log(1/3) 
+                self.DP_D_matrix[0,j] = self.DP_D_matrix[0,j-1] + cost_D -np.log(ProbD)#-np.log(1/3) 
             else:
                 self.DP_D_matrix[0,j] = self.DP_D_matrix[0,j-1] + cost_D + self.FSA.I_dd
             # [END] NEW TEST 21122022 ====
@@ -364,14 +379,18 @@ class DP5:
                 self.backtrackers_D[0][j] = [0,j-1,1]  
         
     def run_optimal_alignment(self):
+
+        # initial state probabilities 
+        ProbM = 0.99
         
         #for i in tqdm(range(1,self.T_len+1)):
         for i in range(1,self.T_len+1):
             for j in range(1,self.S_len+1):
-                if(isinstance(self.S, TimeSeriesPreprocessor.SummaryTimeSeries)):
-                    match_len,non_match_len_D,non_match_len_I = self.compute_cell(i-1,j-1) # here we use i-1 and j-1 to correctly call the time bin to use 
-                elif(isinstance(self.S, TimeSeriesPreprocessor.SummaryTimeSeriesMVG)):
-                    match_len,non_match_len_D,non_match_len_I = self.compute_cell_as_MVG(i-1,j-1)
+                #if(isinstance(self.S, TimeSeriesPreprocessor.SummaryTimeSeries)):
+                match_len,non_match_len_D,non_match_len_I = self.compute_cell(i-1,j-1) # here we use i-1 and j-1 to correctly call the time bin to use 
+                #elif(isinstance(self.S, TimeSeriesPreprocessor.SummaryTimeSeriesMVG)):
+                #    match_len,non_match_len_D,non_match_len_I = self.compute_cell_as_MVG(i-1,j-1)
+                    
                    
                 if(not self.backward_run):
                     # filling M matrix
@@ -383,7 +402,7 @@ class DP5:
                    #          ] 
                     #  [START] NEW TEST 21122022 ====
                     if(i==1 and j==1):
-                        temp_m = [  self.DP_M_matrix[i-1,j-1] + match_len -np.log(1/3), #self.FSA.I_mm, # 0
+                        temp_m = [  self.DP_M_matrix[i-1,j-1] + match_len - np.log(ProbM), #-np.log(1/3), #self.FSA.I_mm, # 0
                                np.inf,# self.DP_W_matrix[i-1,j-1] + match_len + np.inf, # -np.log(1/5), #+ self.FSA.I_mw, # 1
                                np.inf,# self.DP_V_matrix[i-1,j-1] + match_len + np.inf, # -np.log(1/5),  #+ self.FSA.I_mv, # 2
                                np.inf,# self.DP_D_matrix[i-1,j-1]  + match_len -np.log(1/5), #+ self.FSA.I_md, # 3
@@ -741,8 +760,8 @@ class DP5:
             c = c + step 
 
         return [S_match_regions, T_match_regions, S_non_match_regions, T_non_match_regions]
-    
-    
+
+
 class AlignmentLandscape:
     
     def __init__(self, fwd_DP, bwd_DP, S_len, T_len, alignment_path, the_5_state_machine = False):
@@ -852,8 +871,8 @@ class AlignmentLandscape:
         ax.plot(path_y, path_x, color='black', linewidth=3, alpha=0.5, linestyle='dashed') # path plot
         plt.xlabel("S",fontweight='bold')
         plt.ylabel("T",fontweight='bold')            
-        
-        
+
+
 class Utils:
 
     def compute_alignment_area_diff_distance(self, A1, A2, S_len, T_len):
@@ -1005,5 +1024,5 @@ class Utils:
 
 
     
-    
+
     

@@ -44,8 +44,8 @@ def negative_log_likelihood(μ,σ,N,data):
 def compute_expected_Fisher_matrix(μ,σ,N):
     return torch.tensor([[N/(σ**2),0],[0,(2*N)/(σ**2)]]) # depends on σ
  ####  ---- expected_Fisher = compute_expected_Fisher_matrix(μ_base,σ_base,N) # compute the closed form of matrix determinant instead 
-    
-#def compute_observed_Fisher_matrix(μ,σ):
+
+# def compute_observed_Fisher_matrix(μ,σ):
 #    return torch.autograd.functional.hessian(negative_log_likelihood ,(μ,σ))
 
 def I_prior(μ,σ): 
@@ -79,7 +79,7 @@ def run_dist_compute_v3(data_to_model,μ_base, σ_base, print_stat=False):
     
     return I_base_model, I_data_g_base_model
 
-    
+
 # random gaussian distributed data generation
 def generate_random_dataset(N_datapoints, mean, variance):  
     
@@ -97,7 +97,7 @@ def generate_random_dataset(N_datapoints, mean, variance):
         D.append(float(NormalDist.rsample().detach().numpy()))
     #print('True params: [ μ=',μ.data.numpy(), ' , σ=', σ.data.numpy(),']' )
     return D,μ,σ
-    
+
 
 def sample_state(x):
     x = np.cumsum(x)
@@ -113,10 +113,10 @@ def sample_state(x):
         return 3#'D'
     elif(rand_num>x[3] and rand_num<=x[4]):
         return 4#'I'
+
     
+
     
+
     
-    
-    
-    
-    
+

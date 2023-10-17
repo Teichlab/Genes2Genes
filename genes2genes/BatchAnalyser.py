@@ -94,11 +94,11 @@ class BatchAnalyser:
             null = (I_ref_model + I_refdata_g_ref_model + I_query_model + I_querydata_g_query_model)/(len(query_data)+len(ref_data))
             match_compression =   match_encoding_len - null 
             return match_compression.numpy()
+
         
+
         
+
         
-        
-        
-        
-        
+
         
