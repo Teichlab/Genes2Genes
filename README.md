@@ -1,6 +1,8 @@
 <p align="left"><img src="G2G_logo.png"></p>
 
 # Genes2Genes
+Project page: https://teichlab.github.io/Genes2Genes
+
 ## A new framework for aligning single-cell trajectories of gene expression 
 G2G aims to guide downstream comparative analysis of single-cell reference and query systems along any axis of progression (e.g. pseudotime). 
 This is done by employing a new dynamic programming (DP) based alignment algorithm which unifies dynamic time warping (DTW) and gap modelling to capture both matches and mismatches between time points. Our DP algorithm 
