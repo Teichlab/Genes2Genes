@@ -36,7 +36,7 @@ The package will be made available on PyPi soon.
 
 ### Tutorial
 
-Please refer to the notebook [`notebooks/Tutorial.ipynb`](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/G2G_Tutorial.ipynb) which gives an example analysis between a reference and query dataset from literature. 
+Please refer to the notebook [`notebooks/Tutorial.ipynb`](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/Tutorial.ipynb) which gives an example analysis between a reference and query dataset from literature. 
 
 ### Funding Acknowledgement
 
