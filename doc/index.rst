@@ -121,4 +121,3 @@ Our manuscript is currently available as a `preprint <https://doi.org/10.1101/20
    :hidden:
    
    self
-   notebooks/G2G_Tutorial
