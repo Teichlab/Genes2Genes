@@ -33,11 +33,6 @@ dependencies = [
     "pandas",
     "seaborn",
     "leven",
-    "multiprocessing",
-    "copy",
-    "warnings",
-    "pickle",
-    "mpl_toolkits",
 ]
 requires-python = ">=3.8"
 
