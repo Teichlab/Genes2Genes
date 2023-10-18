@@ -13,6 +13,7 @@ jobs:
       - uses: actions/setup-python@v3
       - name: Install dependencies
         run: |
+          sudo apt install pandoc
           pip install sphinx sphinx_rtd_theme myst_parser myst_nb nbsphinx pandoc
       - name: Sphinx build
         run: |
