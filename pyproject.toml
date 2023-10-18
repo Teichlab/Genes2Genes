@@ -28,7 +28,6 @@ dependencies = [
     "optbinning",
     "scipy",
     "tqdm",
-    "sklearn",
     "matplotlib",
     "numpy",
     "pandas",
