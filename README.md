@@ -16,9 +16,9 @@ by inferring fully-descriptive gene-specific alignments and single-aggregate ali
 These alignment results enable us to pinpoint dynamic similarities and differences in gene expression between a reference and query, as well as to group genes with similar alignment patterns.  
 
 ### Manuscript preprint 
-***"Gene-level alignment of single cell trajectories informs the progression of in vitro T cell differentiation"*** <br>
+***"Gene-level alignment of single cell trajectories"*** <br>
 **Authors**: Dinithi Sumanaweera†, Chenqu Suo†, Ana-Maria Cujba, Daniele Muraro, Emma Dann, Krzysztof Polanski, Alexander S. Steemers, Woochan Lee, Amanda J. Oliver, Jong-Eun Park, Kerstin B. Meyer, Bianca Dumitrascu, Sarah A. Teichmann* <br>
-Available at: https://www.biorxiv.org/content/10.1101/2023.03.08.531713v2
+Available at: https://www.biorxiv.org/content/10.1101/2023.03.08.531713v3
 
 ### **Installing G2G**
 
