@@ -116,6 +116,12 @@ Our manuscript is currently available as a `preprint <https://doi.org/10.1101/20
 
 *Sumanaweera, D., Suo, C., Cujba, A.M., Muraro, D., Dann, E., Polanski, K., Steemers, A.S., Lee, W., Oliver, A.J., Park, J.E. and Meyer, K.B., 2023.* **Gene-level alignment of single cell trajectories informs the progression of in vitro T cell differentiation**. *bioRxiv, pp.2023-03.*
 
+This publication is part of the `Human Cell Atlas <https://www.humancellatlas.org>`_
+
+Funding Acknowledgement
+===========
+Marie Skłodowska-Curie grant agreement No: 101026506 (Marie Curie Individual Fellowship) under the European Union’s Horizon 2020 research and innovation programme; Wellcome Trust Ph.D. Fellowship for Clinicians; Wellcome Trust (WT206194); ERC Consolidator Grant (646794); Wellcome Sanger Institute’s Translation Committee Fund.
+
 
 .. toctree::
    :hidden:
