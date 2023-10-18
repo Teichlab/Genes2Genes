@@ -108,7 +108,7 @@ G2G takes reference and query input data as ``anndata`` objects, where each ``ad
 The user can estimate pseudotime of the cells in their datasets  using any suitable method available (such as `Diffusion pseudotime <https://scanpy.readthedocs.io/en/stable/generated/scanpy.tl.dpt.html>`_, `CellRank <https://github.com/theislab/cellrank>`_, `Palantir <https://github.com/dpeerlab/Palantir>`_,  `GPLVM <https://pyro.ai/examples/gplvm.html>`_ etc.).
 For better visualisation and interpretation of the alignment results, we recommend the data to be annotated with their cell types (manually and/or using an automatic annotation tool such as `CellTypist <https://www.celltypist.org>`_). 
 
-Please refer to our Tutorial for an example analysis between a reference and query dataset from literature.
+Please refer to our `Tutorial <https://github.com/Teichlab/Genes2Genes/blob/8ab6962acca761e077ff07186b0829f964622f00/notebooks/Tutorial.ipynb>`_ for an example analysis between a reference and query dataset from literature.
 
 Citing Genes2Genes
 ===========
