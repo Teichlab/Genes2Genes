@@ -24,7 +24,7 @@ Available at: https://doi.org/10.1101/2023.03.08.531713
 
 ### **Installing G2G**
 
-For now, G2G needs to be installed from GitHub:
+For now, G2G needs to be installed from GitHub in a Python >=3.8 environment by running the following:
 ```bash
 pip install git+https://github.com/Teichlab/Genes2Genes.git
 ```
@@ -37,9 +37,10 @@ The package will be made available on PyPi soon.
 
 ### Tutorial
 
-Please refer to the notebook [`notebooks/Tutorial.ipynb`](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/Tutorial.ipynb) which gives an example analysis between a reference and query dataset from literature. 
-Note: The runtime of the algorithm depends on the number of cells in the reference and query datasets, the number of interpolation time points, and the number of genes to align. 
-Current version of G2G utilizes concurrency through Python multiprocessing to speed up the gene-level alignment process. It creates a number of processes equal to the number of cores in the system, and each process performs a single gene-level alignment at one time. 
+Please refer to the notebook [`notebooks/Tutorial.ipynb`](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/Tutorial.ipynb) which gives an example analysis between a reference and query dataset from literature. <br>
+
+**Note**: The runtime of the G2G algorithm depends on the number of cells in the reference and query datasets, the number of interpolation time points, and the number of genes to align. 
+G2G currently utilizes concurrency through Python multiprocessing to speed up the gene-level alignment process. It creates a number of processes equal to the number of cores in the system, and each process performs a single gene-level alignment at one time. 
 
 
 ### Funding Acknowledgement
