@@ -38,6 +38,9 @@ The package will be made available on PyPi soon.
 ### Tutorial
 
 Please refer to the notebook [`notebooks/Tutorial.ipynb`](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/Tutorial.ipynb) which gives an example analysis between a reference and query dataset from literature. 
+Note: The runtime of the algorithm depends on the number of cells in the reference and query datasets, the number of interpolation time points, and the number of genes to align. 
+Current version of G2G utilizes concurrency through Python multiprocessing to speed up the gene-level alignment process. It creates a number of processes equal to the number of cores in the system, and each process performs a single gene-level alignment at one time. 
+
 
 ### Funding Acknowledgement
 Marie Skłodowska-Curie grant agreement No: 101026506 (Marie Curie Individual Fellowship) under the European Union’s Horizon 2020 research and innovation programme; Wellcome Trust Ph.D. Fellowship for Clinicians; Wellcome Trust (WT206194); ERC Consolidator Grant (646794); Wellcome Sanger Institute’s Translation Committee Fund.
