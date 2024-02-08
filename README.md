@@ -24,10 +24,13 @@ Available at: https://doi.org/10.1101/2023.03.08.531713
 
 ### **Installing G2G**
 
-For now, G2G needs to be installed from GitHub in a Python >=3.8 environment by running the following:
+For now, G2G needs to be installed from GitHub in a Python >=3.8 environment. We recommend creating a new Conda environment before installing G2G, to avoid any version conflicts and dependency issues.
 ```bash
+conda create --name g2g_env python=3.8 
+conda activate g2g_env
 pip install git+https://github.com/Teichlab/Genes2Genes.git
 ```
+
 The package will be made available on PyPi soon.
 
 ### **Input to G2G**
