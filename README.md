@@ -38,6 +38,8 @@ The package will be made available on PyPi soon.
 (2) Query anndata object (with `adata_query.X` storing log1p normalised gene expression), and
 (3) Pseudotime estimates stored in each anndata object under `adata_ref.obs['time']` and `adata_query.obs['time']`.
 
+**Note:** Please ensure that you have reasonable pseudotime estimates that fairly represent the trajectories, as the accuracy and reliability of trajectory alignment entirely depend on the accuracy and reliability of your pseudotime estimation. We recommend users to inspect whether the cell density distribution along estimated pseudotime (in terms of the meta attributes such as the annotated cell type, sampling time points, etc. where applicable) well-represents each trajectory of focus. Users can choose the best pseudotime estimates to compare after testing several different pseudotime estimation tools on their datasets. 
+
 ### Tutorial
 
 Please refer to the notebook [`notebooks/Tutorial.ipynb`](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/Tutorial.ipynb) which gives an example analysis between a reference and query dataset from literature. 
