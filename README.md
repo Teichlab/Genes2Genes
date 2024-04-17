@@ -47,8 +47,7 @@ Please also refer https://teichlab.github.io/Genes2Genes on how to read a trajec
 ### **Runtime**
 
 The runtime of the G2G algorithm depends on the number of cells in the reference and query datasets, the number of interpolation time points, and the number of genes to align. 
-For an idea, please see below a simple run-time analysis of G2G for 89 genes of the reference (N<sub>R</sub> = 179 cells) and query (N<sub>Q</sub> = 290 cells) from literature used in our tutorial. Note: the number of interpolation points = 14 for the middle plot. 
-(Reference: [`notebooks/Supplementary_notebook1.ipynb`](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/Supplementary_notebook1.ipynb))
+For an idea, please see below a simple run-time analysis of G2G for 89 genes of the reference (N<sub>R</sub> = 179 cells) and query (N<sub>Q</sub> = 290 cells) from literature used in our tutorial. Note: the number of interpolation points = 14 for the middle plot. (Reference: [`notebooks/Supplementary_notebook1.ipynb`](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/Supplementary_notebook1.ipynb))
 
 <div style="display: flex; justify-content: space-between;">
     <p align="center">
@@ -58,7 +57,7 @@ For an idea, please see below a simple run-time analysis of G2G for 89 genes of 
 </div><br>
 
 
-**Further examples from the case studies of our manuscript:** 
+**Further examples from the case studies of our manuscript:** <br>
 (Reference: [`notebooks/Supplementary_notebook2.ipynb`](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/Supplementary_notebook2.ipynb))
 
 It took approximately 12min to align 1371 gene trajectories of 20,327 reference cells & 17,176 query cells under 14 interpolation time points; and approximately 4.5min to align 994 gene trajectories of 3157 reference cells & 890 query cells under 13 interpolation time points. 
