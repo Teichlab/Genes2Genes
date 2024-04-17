@@ -1,4 +1,4 @@
-<p align="left"><img src="images/G2G_logo_new.png" style="max-width: 15%; max-height: 15%;"></p>
+<img src="images/G2G_logo_new.png" alt="Image" width="180" height="150">
 
 # Genes2Genes
 Project page: https://teichlab.github.io/Genes2Genes
@@ -47,14 +47,19 @@ Please also refer https://teichlab.github.io/Genes2Genes on how to read a trajec
 ### **Runtime**
 
 The runtime of the G2G algorithm depends on the number of cells in the reference and query datasets, the number of interpolation time points, and the number of genes to align. 
-For an idea, please see below a simple run-time analysis of G2G for 89 genes of the reference (N<sub>R</sub> = 179 cells) and query (N<sub>Q</sub> = 290 cells) from literature used in our tutorial. (Note: the number of interpolation points = 14 for the middle plot). Reference: [`notebooks/Supplementary_notebook1.ipynb`].
+For an idea, please see below a simple run-time analysis of G2G for 89 genes of the reference (N<sub>R</sub> = 179 cells) and query (N<sub>Q</sub> = 290 cells) from literature used in our tutorial. Note: the number of interpolation points = 14 for the middle plot. 
+(Reference: [`notebooks/Supplementary_notebook1.ipynb`](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/Supplementary_notebook1.ipynb))
 
 <div style="display: flex; justify-content: space-between;">
-    <img src="images/n_interpolation_points_vs_time_PAM_LPS_G2G_alignment.png" style="max-width: 30%; max-height: 30%;">
-    <img src="images/cell_numbers_vs_approx_time_PAM_LPS_G2G_alignment.png" style="max-width: 80%; max-height: 80%;">
+    <p align="center">
+    <img src="images/n_interpolation_points_vs_time_PAM_LPS_G2G_alignment.png" alt="Image" width="300" height="200">
+    <img src="images/cell_numbers_vs_approx_time_PAM_LPS_G2G_alignment.png" alt="Image" width="500" height="200">
+    </p>
 </div><br>
 
-**Further examples from the case studies of our manuscript:** Reference: [`notebooks/Supplementary_notebook2.ipynb`].
+
+**Further examples from the case studies of our manuscript:** 
+(Reference: [`notebooks/Supplementary_notebook2.ipynb`](https://github.com/Teichlab/Genes2Genes/blob/main/notebooks/Supplementary_notebook2.ipynb))
 
 It took approximately 12min to align 1371 gene trajectories of 20,327 reference cells & 17,176 query cells under 14 interpolation time points; and approximately 4.5min to align 994 gene trajectories of 3157 reference cells & 890 query cells under 13 interpolation time points. 
 
