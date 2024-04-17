@@ -7,24 +7,21 @@ name = "genes2genes"
 authors = [{name = "Dinithi Sumanaweera", email = "ds40@sanger.ac.uk"}]
 readme = "README.md"
 license = {file = "LICENSE"}
-classifiers = ["License :: OSI Approved :: MIT License"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Development Status :: 5 - Production/Stable",
+]
 dynamic = ["version", "description"]
+keywords = ["single cell", "trajectory alignment", "dynamic programming"]
 dependencies = [
     "anndata",
     "regex",
-    "textdistance",
     "tabulate",
     "gsea-api",
     "gseapy",
-    "gprofiler-official",
-    "levenshtein",
     "torch",
-    "gpytorch",
-    "scanpy",
-    "adjusttext",
-    "ipympl",
-    "colorcet",
-    "optbinning",
     "scipy",
     "tqdm",
     "matplotlib",
@@ -36,4 +33,5 @@ dependencies = [
 requires-python = ">=3.8"
 
 [project.urls]
-Home = "https://github.com/Teichlab/Genes2Genes"
+Home = "https://teichlab.github.io/Genes2Genes"
+Repository = "https://github.com/Teichlab/Genes2Genes"

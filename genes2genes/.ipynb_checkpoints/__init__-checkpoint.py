@@ -1,4 +1,4 @@
-"""A tool for aligning gene expression trajectories of single-cell reference and query systems"""
+"""Genes2Genes: Aligning transcriptomic trajectories of single-cell reference and query systems at gene-level"""
 __version__ = "0.2.0"
 
 from . import AlignmentDistMan
