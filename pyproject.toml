@@ -23,6 +23,7 @@ dependencies = [
     "gseapy",
     "torch",
     "scipy",
+    "scikit-learn",
     "tqdm",
     "matplotlib",
     "numpy<2",
