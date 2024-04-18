@@ -389,7 +389,7 @@ def plot_mean_trend_heatmaps(aligner, GENE_LIST, pathway_name, cluster=False, FI
     print('- Plotting z-normalised interpolated mean trends')
     plot_heatmaps(S_zmat, T_zmat, GENE_LIST, pathway_name,cluster=cluster, FIGSIZE=FIGSIZE)
 
-def plot_heatmaps(mat_ref,mat_query,GENE_LIST, pathway_name, cluster=False, FIGSIZE=(14,7), write_file=False):
+def plot_heatmaps(mat_ref, mat_query, GENE_LIST, pathway_name, cluster=False, FIGSIZE=(14,7), write_file=False):
     
     if(cluster):
         g=sb.clustermap(mat_ref, figsize=(0.4,0.4), col_cluster=False, cbar_pos=None) 
@@ -417,3 +417,14 @@ def plot_heatmaps(mat_ref,mat_query,GENE_LIST, pathway_name, cluster=False, FIGS
     if(write_file):
         plt.savefig(pathway_name+'_heatmap.png', bbox_inches='tight')
     plt.show()
+    
+def plot_pseudotime_dists_with_interpolation_points(adata_ref, adata_query, n_bins):
+
+    plt.figure(figsize=(4,3))
+    sb.kdeplot(adata_ref.obs.time, fill=True, color='forestgreen')
+    sb.kdeplot(adata_query.obs.time, fill=True, color='midnightblue')
+    vlines = np.linspace(0,1,n_bins)
+    for v in vlines:
+        plt.axvline(x=v, color='black', linewidth=1)
+    plt.xlim([0,1])
+    plt.title('Interpolation points')
