@@ -20,7 +20,7 @@ dependencies = [
     "regex",
     "tabulate",
     "gseapy",
-    "blitzgsea"
+    "blitzgsea",
     "torch",
     "scipy",
     "scikit-learn",
