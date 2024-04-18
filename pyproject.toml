@@ -19,8 +19,8 @@ dependencies = [
     "anndata",
     "regex",
     "tabulate",
-    "gsea-api",
     "gseapy",
+    "blitzgsea"
     "torch",
     "scipy",
     "scikit-learn",
@@ -30,6 +30,7 @@ dependencies = [
     "pandas>=2.0.3",
     "seaborn>=0.12.2",
     "leven",
+
 ]
 requires-python = ">=3.8"
 

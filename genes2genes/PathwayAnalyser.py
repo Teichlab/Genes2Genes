@@ -4,13 +4,13 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from tabulate import tabulate
-from gsea_api.molecular_signatures_db import MolecularSignaturesDatabase
+import blitzgsea as blitz
 
 from . import ClusterUtils
 from . import VisualUtils
 
 """
-This script defines Wrappers for GSEAPY enrichr and other functions related to analysing pathway gene sets. 
+This script defines Wrappers for GSEAPY/blitzgsea enrichr and other functions related to analysing pathway gene sets. 
 """
 
 def run_overrepresentation_analysis(gene_set, TARGET_GENESETS=['MSigDB_Hallmark_2020','KEGG_2021_Human']):
@@ -104,26 +104,31 @@ def get_pathway_alignment_stat(aligner, GENE_LIST, pathway_name, cluster=False, 
     print('Average Alignment: ', VisualUtils.color_al_str(average_alignment), '(cell-level)')
     print('- Plotting average alignment path')
     VisualUtils.plot_alignment_path_on_given_matrix(paths = [alignment_path], mat=mat) 
-    VisualUtils.plot_mean_trend_heatmaps(aligner,GENE_LIST, pathway_name,cluster=cluster, FIGSIZE=FIGSIZE) 
-        
+    VisualUtils.plot_mean_trend_heatmaps(aligner,GENE_LIST, pathway_name, cluster=cluster, FIGSIZE=FIGSIZE) 
 
 class InterestingGeneSets:
     
-    def __init__(self, MSIGDB_PATH, version):        
+    def __init__(self, avail_genes):        
         self.SETS = {}
         self.dbs = {}
-        self.msigdb = MolecularSignaturesDatabase(MSIGDB_PATH , version=version)
-        self.dbs['kegg'] = self.msigdb.load('c2.cp.kegg', 'symbols')
-        self.dbs['hallmark'] = self.msigdb.load('h.all', 'symbols')
-        #self.dbs['gobp'] = self.msigdb.load('c5.go.bp', 'symbols')
-        #self.dbs['gocc'] = self.msigdb.load('c5.go.cc', 'symbols')
-        #self.dbs['reac'] = self.msigdb.load('c2.cp.reactome', 'symbols')
+        self.avail_genes = avail_genes
+        print('Initialising to use KEGG_2021_Human and MSigDB_Hallmark_2020 only')
+        self.dbs['KEGG_2021_Human'] = blitz.enrichr.get_library("KEGG_2021_Human")
+        self.dbs['MSigDB_Hallmark_2020'] = blitz.enrichr.get_library("MSigDB_Hallmark_2020")
         
-    def add_new_set_from_msigdb(self, db_name, dbsetname, avail_genes, usersetname):
-        self.SETS[usersetname] = np.intersect1d(list(self.dbs[db_name].gene_sets_by_name[dbsetname].genes), avail_genes)
+    def add_library(self, library_pathway2geneset_map, name):
+        self.dbs[name] = library_pathway2geneset_map
+        
+    def get_available_pathway_list(self, db_name):
+        return list(self.dbs[db_name].keys()) 
+        
+    def add_new_set_from_msigdb(self, db_name, pathway_name, user_setname = None):
+        if(user_setname is None):
+            user_setname = pathway_name
+        self.SETS[user_setname] = np.intersect1d(self.dbs[db_name][pathway_name], self.avail_genes)
 
-    def add_new_set(self, geneset, usersetname, avail_genes):
+    def add_new_set(self, geneset, user_setname):
         geneset = np.asarray(geneset)
-        self.SETS[usersetname] = geneset[np.where([g in avail_genes for g in geneset])]
+        self.SETS[user_setname] = geneset[np.where([g in self.avail_genes for g in geneset])]
 
         
