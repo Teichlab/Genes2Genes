@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Genes2Genes &mdash; Genes2Genes v1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js?v=99a04888"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            Genes2Genes
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Genes2Genes</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">Genes2Genes</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Genes2Genes</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="genes2genes">
+<h1><a class="toc-backref" href="#id1" role="doc-backlink">Genes2Genes</a><a class="headerlink" href="#genes2genes" title="Permalink to this heading"></a></h1>
+<p><strong>A framework for single-cell pseudotime trajectory alignment</strong></p>
+<nav class="contents" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#genes2genes" id="id1">Genes2Genes</a></p>
+<ul>
+<li><p><a class="reference internal" href="#trajectory-alignment-what-why" id="id2">Trajectory alignment: What &amp; Why?</a></p></li>
+<li><p><a class="reference internal" href="#outputs-from-genes2genes" id="id3">Outputs from Genes2Genes</a></p></li>
+<li><p><a class="reference internal" href="#our-approach-to-trajectory-alignment" id="id4">Our approach to trajectory alignment</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#getting-started" id="id5">Getting started</a></p></li>
+<li><p><a class="reference internal" href="#citing-genes2genes" id="id6">Citing Genes2Genes</a></p></li>
+</ul>
+</nav>
+<p>Genes2Genes (G2G) is a new Python framework for aligning single-cell pseudotime trajectories of gene expression between any reference and query for a pairwise comparison such as:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Organoid vs. Reference tissue</p></li>
+<li><p>Control vs. Treatment</p></li>
+<li><p>Healthy vs. Disease</p></li>
+</ul>
+</div></blockquote>
+<section id="trajectory-alignment-what-why">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink">Trajectory alignment: What &amp; Why?</a><a class="headerlink" href="#trajectory-alignment-what-why" title="Permalink to this heading"></a></h2>
+<p>A single-cell trajectory describes the transcriptomic state of cells along some axis of progression (such as time), due to undergoing some dynamic process (e.g. cell differentiation, treatment response, or disease infection). Given an scRNA-seq profile, there are various tools available today to infer such trajectory by estimating a pseudo ordering of the cells along an axis, commonly referred to as ‘pseudotime’. The pseudotime axis of a trajectory can be descritized to represent it as a sequence of discrete time points. Given two such discrete pseudotime sequences of two trajectories, a pairwise alignment between them defines a non-linear mapping between their time points. This mapping could have 1-to-1  matches as well as 1-to-many/many-to-1 matches (a.k.a warps) between the time points, while unmapping the time points which have significantly different transcriptomic states. Below is an example visualization of two cell differentiation trajectories.</p>
+<a class="reference internal image-reference" href="_images/DocFigs1.png"><img alt="What is trajectory alignment?" class="align-center" src="_images/DocFigs1.png" style="width: 600px;" /></a>
+<p>For two trajectories representing single lineages as above, G2G generates an <strong>optimal pairwise trajectory alignment</strong> that captures the matches and mismatches between their time points in sequential order, allowing a user to quantify the degree of similarity between them.</p>
+<a class="reference internal image-reference" href="_images/DocFigs1-1.png"><img alt="Example mapping" class="align-center" src="_images/DocFigs1-1.png" style="width: 600px;" /></a>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>G2G defines 5 different states of alignment between any two <strong>R</strong> and <strong>Q</strong> time points, corresponding to all possible match and mismatch states. They are: 1-to-1 match (<code class="docutils literal notranslate"><span class="pre">M</span></code>), 1-to-many match (<code class="docutils literal notranslate"><span class="pre">V</span></code>), many-to-1 match (<code class="docutils literal notranslate"><span class="pre">W</span></code>), insertion (<code class="docutils literal notranslate"><span class="pre">I</span></code>) and deletion (<code class="docutils literal notranslate"><span class="pre">D</span></code>). Here, <code class="docutils literal notranslate"><span class="pre">I</span></code> or <code class="docutils literal notranslate"><span class="pre">D</span></code> refer to a mismatched time point in Q or R, respectively. These states jointly cover the alignment states defined in classical dynamic time warping and biological sequence alignment.</p>
+<a class="reference internal image-reference" href="_images/DocFigs1-3.png"><img alt="5 states of alignment" class="align-center" src="_images/DocFigs1-3.png" style="width: 600px;" /></a>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p>Accordingly, we can describe any trajectory alignment as a 5-state alignment string. For example, the 5-state alignment string of the above illustrated trajectory alignment is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">IIIMMMWWWIIIDDDMMMIIIIDDDD</span>
+</pre></div>
+</div>
+<p>This G2G alignment string enables us to identify the time regions of match and mismatch along the trajectories. For instance, we can interpret the above illustrated alignment as follow – <em>R and Q trajectories have mid and late mismatches, with the early stage of Q being mismatched, yet starting to match to the early stage of R at the middle of Q’s trajectory. Overall, there are 9 R and Q pseudotime pairs getting matched (with 34.62% alignment similarity)</em>.</p>
+</section>
+<section id="outputs-from-genes2genes">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Outputs from Genes2Genes</a><a class="headerlink" href="#outputs-from-genes2genes" title="Permalink to this heading"></a></h2>
+<p>Given an scRNA-seq dataset with their pseudotime estimates and a specified set of genes (e.g. all transcription factors, highly variable genes, biological/signaling pathway genes), G2G generates fully-descriptive alignments for each gene (i.e. <strong>gene-level alignment</strong>), as well as an average (aggregate) alignment (i.e. <strong>cell-level alignment</strong>) across all genes.</p>
+<p>Below is an example gene-level alignment of the gene <em>JUNB</em> in T cell differentiation between a pan-fetal reference and an artificial thymic organoid system:</p>
+<a class="reference internal image-reference" href="_images/DocFigs2.png"><img alt="Example gene-level alignment?" class="align-center" src="_images/DocFigs2.png" style="width: 600px;" /></a>
+<div class="line-block">
+<div class="line"><br /></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">IIIIIDMMMMMMMMIDDDDD</span>
+</pre></div>
+</div>
+<p>Each gene-level alignment carries its 5-state string, an alignment similarity percentage statistic,  and the optimal alignment cost (in <em>nits</em> – the unit measure of information). For the above gene, the aligment similarity is 40%, and the total cost of alignment is 53.47 nits. When the degree of difference in gene expression  between the reference and query  is high, the alignment cost will also be high.</p>
+<p>G2G uses the inferred gene-level alignments to inform:</p>
+<ol class="arabic simple">
+<li><p><strong>The degree of similarity between the two profiles</strong> as an average percentage of alignment similarity across all the genes tested,</p></li>
+<li><p><strong>An aggregate cell-level alignment across all genes</strong> to inform the average states of match and mismatch between the two profiles (again represented by a 5-state string),</p></li>
+<li><p><strong>A ranked list of genes across time (from the most distant to most similar)</strong> based on their alignment similarity percentage statistic,</p></li>
+<li><p><strong>The diversity of different alignment patterns in genes</strong>, by clustering gene-level alignments to identify different matching and mismatching patterns along time,</p></li>
+</ol>
+<p>between the two single-cell reference and query profiles in comparison.</p>
+<p>For further downstream analysis, G2G provides a wrapper function to check gene-set overrepresentation analysis of the identified gene-clusters and the list of the top distant (differentially-expressed) genes across time, using  <a class="reference external" href="https://github.com/zqfang/GSEApy">GSEApy</a> Enrichr interface. The user is also able to compute an average alignment across any gene subset of their interest.</p>
+<p><strong>Note</strong>: G2G has been developed only for single-lineage trajectory comparison. In the case of a trajectory with multiple branches, we recommend separating out the singe-lineage branches before any pairwise comparison.</p>
+</section>
+<section id="our-approach-to-trajectory-alignment">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Our approach to trajectory alignment</a><a class="headerlink" href="#our-approach-to-trajectory-alignment" title="Permalink to this heading"></a></h2>
+<p>We employ a <strong>dynamic programming</strong> (DP) based algorithm that can capture both matches and mismatches in gene expression in a unified way. This combines the classical <strong>Gotoh’s algorithm</strong> for biological sequence alignment with <strong>dynamic time warping</strong>. Our DP algorithm uses a <strong>Bayesian information-theoretic scoring scheme</strong> based on the <strong>minimum message length</strong> criterion to generate an optimal alignment between two gene trajectories. This scheme  evaluates the distributional similarity of gene expression between R and Q for each pair of time points, in terms of both their mean and variance of expression modelled as Gaussian distributions.
+For more details on the methods, please see our <a class="reference external" href="https://doi.org/10.1101/2023.03.08.531713">manuscript</a>.</p>
+</section>
+</section>
+<section id="getting-started">
+<h1><a class="toc-backref" href="#id5" role="doc-backlink">Getting started</a><a class="headerlink" href="#getting-started" title="Permalink to this heading"></a></h1>
+<p>For now, G2G needs to be installed from GitHub:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/Teichlab/Genes2Genes.git
+</pre></div>
+</div>
+<p>The package will be made available soon on PyPi.</p>
+<p><strong>Input to Gene2Genes</strong></p>
+<p>G2G takes reference and query input data as <code class="docutils literal notranslate"><span class="pre">anndata</span></code> objects, where each <code class="docutils literal notranslate"><span class="pre">adata</span></code> object has:</p>
+<ul class="simple">
+<li><p>log1p normalised gene expression stored at <code class="docutils literal notranslate"><span class="pre">adata.X</span></code></p></li>
+<li><p>pseudotime estimates of the cells stored as <code class="docutils literal notranslate"><span class="pre">adata.obs['time']</span></code></p></li>
+</ul>
+<p>The user can estimate pseudotime of the cells in their datasets  using any suitable method available (such as <a class="reference external" href="https://scanpy.readthedocs.io/en/stable/generated/scanpy.tl.dpt.html">Diffusion pseudotime</a>, <a class="reference external" href="https://github.com/dpeerlab/Palantir">Palantir</a>,  <a class="reference external" href="https://pyro.ai/examples/gplvm.html">GPLVM</a>,  <a class="reference external" href="http://cole-trapnell-lab.github.io/monocle-release/">Monocle</a> etc.).
+For better visualisation and interpretation of the alignment results, we recommend the data to be annotated with their cell types (manually and/or using an automatic annotation tool such as <a class="reference external" href="https://www.celltypist.org">CellTypist</a>).</p>
+<p>Please refer to our <a class="reference internal" href="G2Gtutorial.html"><span class="doc">Tutorial</span></a> for an example analysis between a reference and query dataset from literature.</p>
+</section>
+<section id="citing-genes2genes">
+<h1><a class="toc-backref" href="#id6" role="doc-backlink">Citing Genes2Genes</a><a class="headerlink" href="#citing-genes2genes" title="Permalink to this heading"></a></h1>
+<p>Our manuscript is currently available as a <a class="reference external" href="https://doi.org/10.1101/2023.03.08.531713">preprint</a> at bioRxiv:</p>
+<p><em>Sumanaweera, D., Suo, C., Cujba, A.M., Muraro, D., Dann, E., Polanski, K., Steemers, A.S., Lee, W., Oliver, A.J., Park, J.E. and Meyer, K.B., 2023.</em> <strong>Gene-level alignment of single cell trajectories informs the progression of in vitro T cell differentiation</strong>. <em>bioRxiv, pp.2023-03.</em></p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Dinithi Sumanaweera, Teichmann Lab.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
