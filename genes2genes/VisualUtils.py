@@ -404,7 +404,7 @@ def plot_heatmaps(mat_ref,mat_query,GENE_LIST, pathway_name, cluster=False, FIGS
     max_val = np.max([np.max(mat_ref),np.max(mat_query)]) 
     min_val = np.min([np.min(mat_ref),np.min(mat_query)]) 
     plt.subplot(1,2,1)
-    ax=sb.heatmap(df, vmax=max_val,vmin=min_val, cbar_kws = dict(use_gridspec=False,location="top")) 
+    ax=sb.heatmap(df, vmax=max_val,vmin=min_val, cbar_kws = dict(use_gridspec=False,location="top"), xticklabels=True, yticklabels=True) 
     plt.title('Reference')
     ax.yaxis.set_label_position("left")
     for tick in ax.get_yticklabels():
