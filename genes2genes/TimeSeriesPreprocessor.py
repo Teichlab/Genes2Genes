@@ -177,7 +177,7 @@ def compute_stat(row, x, cell_densities, user_given_std):
                 weighted_std =  user_given_std[idx] #
             
             D,_,_ = MyFunctions.generate_random_dataset(50, weighted_mean, weighted_std)
-            return np.asarray([weighted_mean, weighted_std, D] )
+            return np.asarray([weighted_mean, weighted_std, D], dtype=list)
 
 #row = list(trajInterpolator.cell_weight_mat.loc[intpl_i])
 def interpolate_gene_v2(i, trajInterpolator, user_given_std):
