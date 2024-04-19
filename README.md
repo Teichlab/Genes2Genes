@@ -6,6 +6,8 @@
 G2G aims to guide downstream comparative analysis of single-cell reference and query systems along any axis of progression (e.g. pseudotime). 
 This is done by employing a new dynamic programming (DP) based alignment algorithm which unifies dynamic time warping (DTW) and gap modelling to capture both matches and mismatches between time points. Our DP algorithm incorporates a Bayesian information-theoretic scoring scheme with a five-state probabilistic machine to generate an optimal sequential alignment between a reference trajectory (R) and query trajectory (Q) of a given gene in terms of their scRNA-seq expression. In this way, G2G framework infers a fully-descriptive alignment for each gene of a specified gene set, gene clusters of different alignment patterns, an average (cell-level) alignment across all gene alignments, and further statistics to support downstream analysis (e.g. ranking of genes based on their alignment similarities).
 
+<img src="images/G2G_framework_overview.png" alt="Image">
+
 G2G framework can perform comparisons of gene expression dynamics across pseudotime such as:
 <ul>
     <li>Organoid vs. Reference tissue
