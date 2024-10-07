@@ -52,7 +52,7 @@ def run_agglomerative_clustering(E, gene_list, DIST_THRESHOLD, linkage = "averag
         return cluster_map, None, None, None, None
     silhouette_score = sklearn.metrics.silhouette_score(X=E , labels = model.labels_, metric='precomputed') 
     silhouette_score_samples = sklearn.metrics.silhouette_samples(X=E , labels = model.labels_, metric='precomputed') 
-    silhouette_score_mode = scipy.stats.mode(silhouette_score_samples)[0][0]
+    silhouette_score_mode = scipy.stats.mode(silhouette_score_samples).mode
     
     n_clusters_less_members = []
     for cid in cluster_map.keys():

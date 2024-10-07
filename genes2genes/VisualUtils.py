@@ -14,23 +14,31 @@ from . import Main
 vega_20 = ['#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78', '#2ca02c', '#98df8a', '#d62728',
             '#ff9896', '#9467bd', '#c5b0d5', '#8c564b', '#c49c94', '#e377c2', '#f7b6d2',
             '#7f7f7f', '#c7c7c7', '#bcbd22', '#dbdb8d', '#17becf', '#9edae5',]
-    
-def plot_celltype_barplot(adata, n_bins, annotation_colname, joint_cmap, plot_cell_counts = False, legend=False):
+
+def plot_celltype_barplot(adata, n_bins, annotation_colname, joint_cmap, plot_cell_counts = False, legend=False, time_colname='time'):
 
         if(plot_cell_counts):
             normalize = False
         else:
             normalize = 'columns'
 
-        vec = adata.obs.time
-        bin_edges = np.linspace(0, 1, num=n_bins)  
+        vec = adata.obs[time_colname]
+        bin_edges = np.linspace(0, 1, num=n_bins)
         bin_ids = np.digitize(vec, bin_edges, right=False) # use right=True if we don't need 1.0 cell to always be a single last bin 
         adata.obs['bin_ids'] = bin_ids
-        tmp = pd.crosstab(adata.obs[annotation_colname],adata.obs['bin_ids'], normalize=normalize).T.plot(kind='bar', stacked=True,        
-                                                                                                 color=joint_cmap,grid = False, legend=False, width=0.7,align='edge',figsize=(9,1))
+        
+        tmp = pd.crosstab(adata.obs[annotation_colname], adata.obs['bin_ids'], normalize=normalize)
+        missing_ids = np.setdiff1d(np.arange(1,n_bins+1), np.unique(tmp.columns))
+        # adding zero count columns so that all bins are displayed regardless of their 0 counts.
+        for i in missing_ids:
+            tmp[i] = np.zeros(tmp.shape[0])
+        tmp = tmp[sorted(tmp.columns)]
+        tmp = tmp.T.plot(kind='bar', stacked=True,color=joint_cmap,grid = False, legend=False, width=0.7,align='edge',figsize=(9,1))
+        
         if(legend):    
             tmp.legend(title='Cell-type annotations', bbox_to_anchor=(1.5, 1.02),loc='upper right')
         plt.axis('off')
+
     
 def visualize_gene_alignment(alignment, adata_ref, adata_query, annotation_colname, cmap=None):
 
