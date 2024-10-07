@@ -24,7 +24,7 @@ conda create --name g2g_env python=3.8
 conda activate g2g_env
 pip install genes2genes
 ```
-Or optionally install directly from GitHub: 
+Or optionally install the latest version directly from GitHub: 
 ```bash
 pip install git+https://github.com/Teichlab/Genes2Genes.git
 ```
@@ -64,9 +64,7 @@ G2G can also utilize concurrency through Python multiprocessing by creating a nu
 
 
 ### Citation 
-***"Gene-level alignment of single cell trajectories"*** <br>
-**Authors**: Dinithi Sumanaweera†, Chenqu Suo†, Ana-Maria Cujba, Daniele Muraro, Emma Dann, Krzysztof Polanski, Alexander S. Steemers, Woochan Lee, Amanda J. Oliver, Jong-Eun Park, Kerstin B. Meyer, Bianca Dumitrascu, Sarah A. Teichmann* (***bioRxiv Preprint***)<br>
-Available at: https://doi.org/10.1101/2023.03.08.531713 <br>
+Dinithi Sumanaweera†, Chenqu Suo†, Ana-Maria Cujba, Daniele Muraro, Emma Dann, Krzysztof Polanski, Alexander S. Steemers, Woochan Lee, Amanda J. Oliver, Jong-Eun Park, Kerstin B. Meyer, Bianca Dumitrascu, Sarah A. Teichmann*, **"Gene-level alignment of single cell trajectories",  Nature Methods (2024)**. https://doi.org/10.1038/s41592-024-02378-4
 
 This publication is part of the Human Cell Atlas. 
 
