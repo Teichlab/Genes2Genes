@@ -5,7 +5,7 @@ import scipy
 import sklearn 
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from leven import levenshtein  
+import Levenshtein
 from scipy.spatial import distance
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics.pairwise import euclidean_distances
@@ -24,7 +24,7 @@ def compute_levenshtein_dist_matrix(set_of_strings):
     for s1 in set_of_strings:
         row = []
         for s2 in set_of_strings:
-            row.append(levenshtein(s1,s2)/np.max([len(s1),len(s2)]))
+            row.append(Levenshtein.distance(s1,s2)/np.max([len(s1),len(s2)]))
         E.append(row)
     return E
 
