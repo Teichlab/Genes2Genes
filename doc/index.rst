@@ -93,6 +93,7 @@ Getting started
 We recommend creating a new Conda environment before installing G2G from PyPi, to avoid any version conflicts and dependency issues.
 
 .. code-block:: bash
+
   conda create --name g2g_env python=3.8 
   conda activate g2g_env
   pip install genes2genes
@@ -100,6 +101,7 @@ We recommend creating a new Conda environment before installing G2G from PyPi, t
 Or optionally install the latest version directly from GitHub: 
 
 .. code-block:: bash
+
   pip install git+https://github.com/Teichlab/Genes2Genes.git
 
 
