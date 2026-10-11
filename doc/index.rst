@@ -90,13 +90,16 @@ For more details on the methods, please see our `manuscript <https://doi.org/10.
 Getting started
 ===========
 
-For now, G2G needs to be installed from GitHub:
-
-.. code-block:: shell
-
-   pip install git+https://github.com/Teichlab/Genes2Genes.git
-   
-The package will be made available soon on PyPi. 
+We recommend creating a new Conda environment before installing G2G from PyPi, to avoid any version conflicts and dependency issues.
+```bash
+conda create --name g2g_env python=3.8 
+conda activate g2g_env
+pip install genes2genes
+```
+Or optionally install the latest version directly from GitHub: 
+```bash
+pip install git+https://github.com/Teichlab/Genes2Genes.git
+```
 
 **Input to Gene2Genes**
 
@@ -112,9 +115,8 @@ Please refer to our `Tutorial <https://github.com/Teichlab/Genes2Genes/blob/main
 
 Citing Genes2Genes
 ===========
-Our manuscript is currently available as a `preprint <https://doi.org/10.1101/2023.03.08.531713>`_ at bioRxiv: 
 
-*Sumanaweera, D., Suo, C., Cujba, A.M., Muraro, D., Dann, E., Polanski, K., Steemers, A.S., Lee, W., Oliver, A.J., Park, J.E. and Meyer, K.B., 2023.* **Gene-level alignment of single cell trajectories**. *bioRxiv, pp.2023-03.*
+Dinithi Sumanaweera†, Chenqu Suo†, Ana-Maria Cujba, Daniele Muraro, Emma Dann, Krzysztof Polanski, Alexander S. Steemers, Woochan Lee, Amanda J. Oliver, Jong-Eun Park, Kerstin B. Meyer, Bianca Dumitrascu, Sarah A. Teichmann*, **"Gene-level alignment of single cell trajectories",  Nature Methods (2024)**. https://doi.org/10.1038/s41592-024-02378-4
 
 This publication is part of the `Human Cell Atlas <https://www.humancellatlas.org>`_
 
