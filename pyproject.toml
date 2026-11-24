@@ -23,7 +23,7 @@ dependencies = [
     "blitzgsea",
     "torch",
     "scipy",
-    "scikit-learn",
+    "scikit-learn>=1.4",
     "tqdm",
     "matplotlib",
     "numpy<2",

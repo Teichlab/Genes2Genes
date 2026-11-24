@@ -38,7 +38,7 @@ def compute_hamming_dist_matrix(set_of_strings):
     return E
 
 def run_agglomerative_clustering(E, gene_list, DIST_THRESHOLD, linkage = "average"):
-    model = sklearn.cluster.AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage=linkage, distance_threshold = DIST_THRESHOLD) 
+    model = sklearn.cluster.AgglomerativeClustering(n_clusters=None, metric='precomputed', linkage=linkage, distance_threshold = DIST_THRESHOLD)
     model.fit(E)
     
     cluster_map = {}
@@ -297,7 +297,7 @@ def run_hierarchical_clustering_with_one_hot_encoding(aligner,DIST_THRESHOLD=25)
         E.append(list(np.asarray(encoding).flatten())) 
     E = pd.DataFrame(E)
 
-    model = AgglomerativeClustering(n_clusters=None, affinity='euclidean', linkage='ward',distance_threshold = DIST_THRESHOLD)
+    model = AgglomerativeClustering(n_clusters=None, metric='euclidean', linkage='ward',distance_threshold = DIST_THRESHOLD)
     model.fit(E)
     cluster_ids = model.labels_
     
@@ -342,7 +342,7 @@ def run_hierarchical_clustering_with_int_encoding_scheme(aligner,DIST_THRESHOLD=
             elif(al_state=='I'):
                 E[i,j] = codes[4]
     E = pd.DataFrame(E)
-    model = AgglomerativeClustering(n_clusters=None, affinity='euclidean', linkage='ward',distance_threshold = DIST_THRESHOLD)
+    model = AgglomerativeClustering(n_clusters=None, metric='euclidean', linkage='ward',distance_threshold = DIST_THRESHOLD)
     model.fit(E)
     cluster_ids = model.labels_
     
@@ -390,7 +390,7 @@ def run_hierarchical_clustering_with_binary_encode_alignment_path_euclidean(alig
         E.append(list(np.asarray(encoding).flatten())) 
     E = pd.DataFrame(E)
 
-    model = AgglomerativeClustering(n_clusters=None, affinity='euclidean', linkage='ward',distance_threshold = DIST_THRESHOLD)
+    model = AgglomerativeClustering(n_clusters=None, metric='euclidean', linkage='ward',distance_threshold = DIST_THRESHOLD)
     model.fit(E)
     cluster_ids = model.labels_
     
@@ -416,8 +416,8 @@ def run_hierarchical_clustering_with_binary_encode_alignment_path_hamming(aligne
         al_binary_encodings.append(binary_encode_alignment_path(a.alignment_str))
     E = distance.cdist(al_binary_encodings, al_binary_encodings, 'hamming')
 
-    model = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage='average',distance_threshold = DIST_THRESHOLD)
-    #model = AgglomerativeClustering(n_clusters=None, affinity='euclidean', linkage='ward',distance_threshold = DIST_THRESHOLD)
+    model = AgglomerativeClustering(n_clusters=None, metric='precomputed', linkage='average',distance_threshold = DIST_THRESHOLD)
+    #model = AgglomerativeClustering(n_clusters=None, metric='euclidean', linkage='ward',distance_threshold = DIST_THRESHOLD)
     model.fit(E)
     cluster_ids = model.labels_
     print('run')
